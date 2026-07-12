@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card table-card p-4" style="max-width:600px">
+  <h4 class="fw-bold mb-4">Complete Trip #{{ trip.id }}</h4>
+  <p class="text-muted">{{ trip.source }} → {{ trip.destination }}</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Final Odometer (km)</label>
+      <input type="number" name="final_odometer" class="form-control" step="0.01" required/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Fuel Consumed (liters)</label>
+      <input type="number" name="fuel_consumed" class="form-control" step="0.01" required/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Actual Distance (km)</label>
+      <input type="number" name="actual_distance" class="form-control" step="0.01" required/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Revenue (₹)</label>
+      <input type="number" name="revenue" class="form-control" step="0.01" value="0"/>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-success">Mark Complete</button>
+      <a href="{% url 'trip_list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

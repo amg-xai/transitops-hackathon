@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold">Trips</h2>
+  <a href="{% url 'trip_add' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Trip</a>
+</div>
+<div class="card table-card p-3">
+  <table class="table table-hover">
+    <thead class="table-light">
+      <tr><th>#</th><th>Vehicle</th><th>Driver</th><th>Route</th><th>Cargo (kg)</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for t in trips %}
+      <tr>
+        <td>{{ t.id }}</td>
+        <td>{{ t.vehicle.registration_number }}</td>
+        <td>{{ t.driver.name }}</td>
+        <td>{{ t.source }} → {{ t.destination }}</td>
+        <td>{{ t.cargo_weight }}</td>
+        <td><span class="status-{{ t.status }}">{{ t.get_status_display }}</span></td>
+        <td>
+          {% if t.status == 'draft' %}
+            <a href="{% url 'trip_dispatch' t.pk %}" class="btn btn-sm btn-success">Dispatch</a>
+            <a href="{% url 'trip_cancel' t.pk %}" class="btn btn-sm btn-outline-danger">Cancel</a>
+          {% elif t.status == 'dispatched' %}
+            <a href="{% url 'trip_complete' t.pk %}" class="btn btn-sm btn-primary">Complete</a>
+            <a href="{% url 'trip_cancel' t.pk %}" class="btn btn-sm btn-outline-danger">Cancel</a>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center text-muted">No trips yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

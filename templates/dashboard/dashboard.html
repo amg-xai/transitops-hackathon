@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="fw-bold mb-4">Dashboard</h2>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card kpi-card p-3 text-center">
+      <div class="text-muted small">Total Vehicles</div>
+      <div class="fs-2 fw-bold text-primary">{{ total_vehicles }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card kpi-card p-3 text-center">
+      <div class="text-muted small">Available Vehicles</div>
+      <div class="fs-2 fw-bold text-success">{{ available_vehicles }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card kpi-card p-3 text-center">
+      <div class="text-muted small">In Maintenance</div>
+      <div class="fs-2 fw-bold text-warning">{{ in_maintenance }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card kpi-card p-3 text-center">
+      <div class="text-muted small">Fleet Utilization</div>
+      <div class="fs-2 fw-bold text-info">{{ fleet_utilization }}%</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card kpi-card p-3 text-center">
+      <div class="text-muted small">Active Trips</div>
+      <div class="fs-2 fw-bold text-primary">{{ active_trips }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kpi-card p-3 text-center">
+      <div class="text-muted small">Pending Trips</div>
+      <div class="fs-2 fw-bold text-secondary">{{ pending_trips }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kpi-card p-3 text-center">
+      <div class="text-muted small">Drivers On Duty</div>
+      <div class="fs-2 fw-bold text-danger">{{ drivers_on_duty }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card table-card p-3">
+  <h5 class="fw-bold mb-3">Recent Trips</h5>
+  <table class="table table-hover">
+    <thead class="table-light">
+      <tr><th>#</th><th>Vehicle</th><th>Driver</th><th>Route</th><th>Status</th><th>Date</th></tr>
+    </thead>
+    <tbody>
+      {% for trip in recent_trips %}
+      <tr>
+        <td>{{ trip.id }}</td>
+        <td>{{ trip.vehicle.registration_number }}</td>
+        <td>{{ trip.driver.name }}</td>
+        <td>{{ trip.source }} → {{ trip.destination }}</td>
+        <td><span class="status-{{ trip.status }}">{{ trip.get_status_display }}</span></td>
+        <td>{{ trip.created_at|date:"d M Y" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center text-muted">No trips yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

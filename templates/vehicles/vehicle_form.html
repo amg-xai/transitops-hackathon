@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card table-card p-4" style="max-width:600px">
+  <h4 class="fw-bold mb-4">{{ action }} Vehicle</h4>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Registration Number</label>
+      <input type="text" name="registration_number" class="form-control" value="{{ vehicle.registration_number }}" required/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Name / Model</label>
+      <input type="text" name="name" class="form-control" value="{{ vehicle.name }}" required/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Type</label>
+      <select name="vehicle_type" class="form-select">
+        <option value="van">Van</option>
+        <option value="truck">Truck</option>
+        <option value="bus">Bus</option>
+        <option value="car">Car</option>
+        <option value="motorcycle">Motorcycle</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Max Load Capacity (kg)</label>
+      <input type="number" name="max_load_capacity" class="form-control" value="{{ vehicle.max_load_capacity }}" required/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Acquisition Cost (₹)</label>
+      <input type="number" name="acquisition_cost" class="form-control" value="{{ vehicle.acquisition_cost }}" required/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Odometer (km)</label>
+      <input type="number" name="odometer" class="form-control" value="{{ vehicle.odometer|default:0 }}"/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Region</label>
+      <input type="text" name="region" class="form-control" value="{{ vehicle.region }}"/>
+    </div>
+    {% if action == 'Edit' %}
+    <div class="mb-3">
+      <label class="form-label">Status</label>
+      <select name="status" class="form-select">
+        <option value="available" {% if vehicle.status == 'available' %}selected{% endif %}>Available</option>
+        <option value="on_trip"   {% if vehicle.status == 'on_trip'   %}selected{% endif %}>On Trip</option>
+        <option value="in_shop"   {% if vehicle.status == 'in_shop'   %}selected{% endif %}>In Shop</option>
+        <option value="retired"   {% if vehicle.status == 'retired'   %}selected{% endif %}>Retired</option>
+      </select>
+    </div>
+    {% endif %}
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Save</button>
+      <a href="{% url 'vehicle_list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

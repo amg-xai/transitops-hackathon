@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card table-card p-4" style="max-width:600px">
+  <h4 class="fw-bold mb-4">New Trip</h4>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Vehicle</label>
+      <select name="vehicle" class="form-select" required>
+        {% for v in vehicles %}
+          <option value="{{ v.pk }}">{{ v.registration_number }} — {{ v.name }} ({{ v.max_load_capacity }} kg)</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Driver</label>
+      <select name="driver" class="form-select" required>
+        {% for d in drivers %}
+          <option value="{{ d.pk }}">{{ d.name }} ({{ d.license_category }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Source</label>
+      <input type="text" name="source" class="form-control" required/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Destination</label>
+      <input type="text" name="destination" class="form-control" required/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Cargo Weight (kg)</label>
+      <input type="number" name="cargo_weight" class="form-control" step="0.01" required/>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Planned Distance (km)</label>
+      <input type="number" name="planned_distance" class="form-control" step="0.01" required/>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Create Trip</button>
+      <a href="{% url 'trip_list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

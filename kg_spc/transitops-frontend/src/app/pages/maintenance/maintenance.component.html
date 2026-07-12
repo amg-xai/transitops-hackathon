@@ -1,0 +1,124 @@
+<div class="maintenance-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1>Maintenance</h1>
+      <p>Manage vehicle maintenance logs</p>
+    </div>
+    <div class="header-right">
+      <p-button label="Add Maintenance Log" icon="pi pi-plus" (onClick)="showDialog()"></p-button>
+    </div>
+  </div>
+
+  <p-card class="maintenance-card">
+    <div class="table-header">
+      <p-inputGroup>
+        <input pInputText placeholder="Search maintenance logs..." (input)="onGlobalFilter(dt, $event)" />
+        <p-inputGroupAddon>
+          <i class="pi pi-search"></i>
+        </p-inputGroupAddon>
+      </p-inputGroup>
+    </div>
+
+    <p-table
+      #dt
+      [value]="maintenanceLogs"
+      [loading]="loading"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} logs"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="vehicle_registration">Vehicle <p-sortIcon field="vehicle_registration"></p-sortIcon></th>
+          <th pSortableColumn="vehicle_name">Vehicle Name <p-sortIcon field="vehicle_name"></p-sortIcon></th>
+          <th pSortableColumn="description">Description <p-sortIcon field="description"></p-sortIcon></th>
+          <th pSortableColumn="cost">Cost ($) <p-sortIcon field="cost"></p-sortIcon></th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status"></p-sortIcon></th>
+          <th pSortableColumn="start_date">Start Date <p-sortIcon field="start_date"></p-sortIcon></th>
+          <th>Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-log>
+        <tr>
+          <td>{{ log.vehicle_registration }}</td>
+          <td>{{ log.vehicle_name }}</td>
+          <td>{{ log.description }}</td>
+          <td>${{ log.cost.toLocaleString() }}</td>
+          <td>
+            <p-tag [value]="log.status" [style]="{ 'background-color': getStatusColor(log.status), color: 'white' }"></p-tag>
+          </td>
+          <td>{{ log.start_date }}</td>
+          <td>
+            <div class="action-buttons">
+              <p-button icon="pi pi-eye" (onClick)="viewMaintenanceLog(log)" text rounded></p-button>
+              <p-button *ngIf="log.status === 'active'" icon="pi pi-check" (onClick)="closeMaintenanceLog(log)" text rounded tooltip="Close"></p-button>
+              <p-button icon="pi pi-trash" (onClick)="deleteMaintenanceLog(log)" text rounded severity="danger"></p-button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="empty-message">
+            <div class="empty-state">
+              <i class="pi pi-wrench"></i>
+              <p>No maintenance logs found</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <!-- Add Maintenance Log Dialog -->
+  <p-dialog
+    [(visible)]="displayDialog"
+    [style]="{ width: '500px' }"
+    header="Add Maintenance Log"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <form>
+      <div class="form-group">
+        <label for="vehicle">Vehicle *</label>
+        <select id="vehicle" [(ngModel)]="newLog.vehicle" name="vehicle">
+          <option [ngValue]="null">Select vehicle</option>
+          <option *ngFor="let vehicle of vehicles" [value]="vehicle.id">{{ vehicle.registration_number }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description *</label>
+        <textarea id="description" pInputTextarea [(ngModel)]="newLog.description" rows="3" placeholder="Describe the maintenance work" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="cost">Cost ($) *</label>
+        <p-inputNumber id="cost" [(ngModel)]="newLog.cost" [min]="0"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="status">Status *</label>
+        <select id="status" [(ngModel)]="newLog.status" name="status">
+          <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="start_date">Start Date *</label>
+        <input id="start_date" type="date" [(ngModel)]="newLog.start_date" name="start_date" />
+      </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <p-button label="Cancel" (onClick)="displayDialog = false" text></p-button>
+      <p-button label="Save" (onClick)="saveMaintenanceLog()"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <p-toast></p-toast>
+  <p-confirmDialog [style]="{ width: '400px' }"></p-confirmDialog>
+</div>

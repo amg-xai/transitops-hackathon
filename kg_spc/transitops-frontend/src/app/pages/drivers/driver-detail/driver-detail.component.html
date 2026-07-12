@@ -1,0 +1,135 @@
+<div class="driver-detail-container">
+  <div class="page-header">
+    <div class="header-left">
+      <p-button icon="pi pi-arrow-left" label="Back" (onClick)="goBack()" text></p-button>
+      <h1 *ngIf="driver">{{ driver.name }}</h1>
+      <p *ngIf="driver">Driver Details</p>
+    </div>
+    <div class="header-right">
+      <p-button label="Edit" icon="pi pi-pencil" (onClick)="showEditDialog()"></p-button>
+      <p-button label="Delete" icon="pi pi-trash" (onClick)="deleteDriver()" severity="danger"></p-button>
+    </div>
+  </div>
+
+  <p-progressBar *ngIf="loading" mode="indeterminate" styleClass="w-full mb-4"></p-progressBar>
+
+  <div *ngIf="!loading && driver" class="driver-content">
+    <div class="detail-grid">
+      <p-card header="Driver Information" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Full Name:</span>
+          <span class="value">{{ driver.name }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">License Number:</span>
+          <span class="value">{{ driver.license_number }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">License Category:</span>
+          <span class="value">
+            <p-tag [value]="driver?.license_category" [severity]="'info'"></p-tag>
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">License Expiry:</span>
+          <span class="value" [class.expired]="driver.is_license_expired">{{ driver.license_expiry }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Contact Number:</span>
+          <span class="value">{{ driver.contact_number }}</span>
+        </div>
+      </p-card>
+
+      <p-card header="Performance & Status" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Safety Score:</span>
+          <span class="value">
+            <p-progressBar [value]="(driver?.safety_score ?? 0) * 10" [showValue]="true" [style]="{ height: '12px' }"></p-progressBar>
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Status:</span>
+          <span class="value">
+            <p-tag [value]="driver?.status" [style]="{ 'background-color': getStatusColor(driver?.status || ''), color: 'white' }"></p-tag>
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">License Expired:</span>
+          <span class="value">
+            <p-tag [value]="driver?.is_license_expired ? 'Yes' : 'No'" [severity]="driver?.is_license_expired ? 'danger' : 'success'"></p-tag>
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Dispatchable:</span>
+          <span class="value">
+            <p-tag [value]="driver?.is_dispatchable ? 'Yes' : 'No'" [severity]="driver?.is_dispatchable ? 'success' : 'danger'"></p-tag>
+          </span>
+        </div>
+      </p-card>
+
+      <p-card header="Timestamps" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Created At:</span>
+          <span class="value">{{ driver?.created_at | date:'medium' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Last Updated:</span>
+          <span class="value">{{ driver?.updated_at | date:'medium' }}</span>
+        </div>
+      </p-card>
+    </div>
+
+    <div *ngIf="driver?.is_license_expired" class="alert-card warning">
+      <i class="pi pi-exclamation-triangle"></i>
+      <div class="alert-content">
+        <div class="alert-title">License Expired</div>
+        <div class="alert-message">This driver's license has expired and cannot be dispatched.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Dialog -->
+  <p-dialog
+    [(visible)]="displayEditDialog"
+    [style]="{ width: '500px' }"
+    header="Edit Driver"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <form>
+      <div class="form-group">
+        <label for="edit_name">Full Name *</label>
+        <input id="edit_name" pInputText [(ngModel)]="editDriver.name" required />
+      </div>
+
+      <div class="form-group">
+        <label for="edit_contact_number">Contact Number *</label>
+        <input id="edit_contact_number" pInputText [(ngModel)]="editDriver.contact_number" required />
+      </div>
+
+      <div class="form-group">
+        <label for="edit_safety_score">Safety Score (1-10) *</label>
+        <p-inputNumber id="edit_safety_score" [(ngModel)]="editDriver.safety_score" [min]="1" [max]="10"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="edit_status">Status *</label>
+        <select id="edit_status" [(ngModel)]="editDriver.status" name="edit_status">
+          <option value="available">available</option>
+          <option value="on_trip">on_trip</option>
+          <option value="off_duty">off_duty</option>
+          <option value="suspended">suspended</option>
+        </select>
+      </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <p-button label="Cancel" (onClick)="displayEditDialog = false" text></p-button>
+      <p-button label="Save" (onClick)="updateDriver()"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <p-toast></p-toast>
+  <p-confirmDialog [style]="{ width: '400px' }"></p-confirmDialog>
+</div>

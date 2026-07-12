@@ -1,0 +1,128 @@
+<div class="register-container">
+  <div class="register-card">
+    <div class="register-header">
+      <div class="logo">
+        <i class="pi pi-truck"></i>
+        <span>TransitOps</span>
+      </div>
+      <h2>Create Account</h2>
+      <p>Join TransitOps to manage your fleet</p>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="first_name">First Name</label>
+          <input
+            id="first_name"
+            type="text"
+            pInputText
+            formControlName="first_name"
+            placeholder="First name"
+            [class.p-invalid]="registerForm.get('first_name')?.invalid && registerForm.get('first_name')?.touched"
+          />
+          <small class="p-error" *ngIf="registerForm.get('first_name')?.invalid && registerForm.get('first_name')?.touched">
+            First name is required
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="last_name">Last Name</label>
+          <input
+            id="last_name"
+            type="text"
+            pInputText
+            formControlName="last_name"
+            placeholder="Last name"
+            [class.p-invalid]="registerForm.get('last_name')?.invalid && registerForm.get('last_name')?.touched"
+          />
+          <small class="p-error" *ngIf="registerForm.get('last_name')?.invalid && registerForm.get('last_name')?.touched">
+            Last name is required
+          </small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input
+          id="username"
+          type="text"
+          pInputText
+          formControlName="username"
+          placeholder="Choose a username"
+          [class.p-invalid]="registerForm.get('username')?.invalid && registerForm.get('username')?.touched"
+        />
+        <small class="p-error" *ngIf="registerForm.get('username')?.invalid && registerForm.get('username')?.touched">
+          Username is required (min 3 characters)
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          pInputText
+          formControlName="email"
+          placeholder="your@email.com"
+          [class.p-invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
+        />
+        <small class="p-error" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+          Valid email is required
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label for="role">Role</label>
+        <select id="role" formControlName="role">
+          <option *ngFor="let option of roleOptions" [value]="option.value">{{ option.label }}</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            pPassword
+            formControlName="password"
+            placeholder="Create password"
+            [class.p-invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+          />
+          <small class="p-error" *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+            Password is required (min 6 characters)
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="password_confirm">Confirm Password</label>
+          <input
+            id="password_confirm"
+            type="password"
+            pPassword
+            formControlName="password_confirm"
+            placeholder="Confirm password"
+            [class.p-invalid]="registerForm.get('password_confirm')?.invalid && registerForm.get('password_confirm')?.touched"
+          />
+          <small class="p-error" *ngIf="registerForm.get('password_confirm')?.invalid && registerForm.get('password_confirm')?.touched">
+            Please confirm your password
+          </small>
+        </div>
+      </div>
+
+      <p-button
+        type="submit"
+        label="Create Account"
+        [loading]="loading"
+        styleClass="w-full"
+      ></p-button>
+    </form>
+
+    <div class="register-footer">
+      <p>Already have an account? <a routerLink="/login">Sign In</a></p>
+    </div>
+  </div>
+
+  <p-toast></p-toast>
+</div>

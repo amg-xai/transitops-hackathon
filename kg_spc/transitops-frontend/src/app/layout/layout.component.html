@@ -1,0 +1,35 @@
+<div class="layout-container">
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed">
+    <div class="sidebar-header">
+      <div class="logo">
+        <i class="pi pi-truck"></i>
+        <span *ngIf="!isSidebarCollapsed">TransitOps</span>
+      </div>
+    </div>
+    
+    <p-menu [model]="menuItems" class="sidebar-menu"></p-menu>
+  </aside>
+
+  <div class="main-content">
+    <header class="app-header">
+      <div class="header-left">
+        <p-button icon="pi pi-bars" (onClick)="toggleSidebar()" text rounded></p-button>
+        <h1 class="page-title">TransitOps</h1>
+      </div>
+      
+      <div class="header-right">
+        <p-button icon="pi pi-moon" (onClick)="toggleDarkMode()" text rounded [class.active]="isDarkMode"></p-button>
+        <p-avatar [label]="currentUser?.first_name?.charAt(0) || 'U'" shape="circle" styleClass="user-avatar"></p-avatar>
+        <div class="user-info">
+          <span class="user-name">{{currentUser?.first_name}} {{currentUser?.last_name}}</span>
+          <span class="user-role">{{currentUser?.role}}</span>
+        </div>
+        <p-button icon="pi pi-sign-out" (onClick)="logout()" text rounded severity="danger"></p-button>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,141 @@
+<div class="vehicles-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1>Vehicles</h1>
+      <p>Manage your fleet vehicles</p>
+    </div>
+    <div class="header-right">
+      <p-button label="Add Vehicle" icon="pi pi-plus" (onClick)="showDialog()"></p-button>
+    </div>
+  </div>
+
+  <p-card class="vehicles-card">
+    <div class="table-header">
+      <p-inputGroup>
+        <input pInputText placeholder="Search vehicles..." (input)="onGlobalFilter(dt, $event)" />
+        <p-inputGroupAddon>
+          <i class="pi pi-search"></i>
+        </p-inputGroupAddon>
+      </p-inputGroup>
+    </div>
+
+    <p-table
+      #dt
+      [value]="vehicles"
+      [loading]="loading"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} vehicles"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="registration_number">Registration <p-sortIcon field="registration_number"></p-sortIcon></th>
+          <th pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+          <th pSortableColumn="vehicle_type">Type <p-sortIcon field="vehicle_type"></p-sortIcon></th>
+          <th pSortableColumn="max_load_capacity">Capacity (kg) <p-sortIcon field="max_load_capacity"></p-sortIcon></th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status"></p-sortIcon></th>
+          <th pSortableColumn="region">Region <p-sortIcon field="region"></p-sortIcon></th>
+          <th>Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-vehicle>
+        <tr>
+          <td>{{ vehicle.registration_number }}</td>
+          <td>{{ vehicle.name }}</td>
+          <td>
+            <p-tag [value]="vehicle.vehicle_type" [severity]="'info'"></p-tag>
+          </td>
+          <td>{{ vehicle.max_load_capacity }}</td>
+          <td>
+            <p-tag [value]="vehicle.status" [style]="{ 'background-color': getStatusColor(vehicle.status), color: 'white' }"></p-tag>
+          </td>
+          <td>{{ vehicle.region }}</td>
+          <td>
+            <div class="action-buttons">
+              <p-button icon="pi pi-eye" (onClick)="viewVehicle(vehicle)" text rounded></p-button>
+              <p-button icon="pi pi-trash" (onClick)="deleteVehicle(vehicle)" text rounded severity="danger"></p-button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="empty-message">
+            <div class="empty-state">
+              <i class="pi pi-truck"></i>
+              <p>No vehicles found</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <!-- Add Vehicle Dialog -->
+  <p-dialog
+    [(visible)]="displayDialog"
+    [style]="{ width: '500px' }"
+    header="Add New Vehicle"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <form [formGroup]="newVehicleForm">
+      <div class="form-group">
+        <label for="registration_number">Registration Number *</label>
+        <input id="registration_number" pInputText formControlName="registration_number" required />
+      </div>
+
+      <div class="form-group">
+        <label for="name">Vehicle Name *</label>
+        <input id="name" pInputText formControlName="name" required />
+      </div>
+
+      <div class="form-group">
+        <label for="vehicle_type">Vehicle Type *</label>
+        <select id="vehicle_type" formControlName="vehicle_type">
+          <option *ngFor="let type of vehicleTypes" [value]="type">{{ type }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="max_load_capacity">Max Load Capacity (kg) *</label>
+        <p-inputNumber id="max_load_capacity" formControlName="max_load_capacity" [min]="0"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="odometer">Odometer (km) *</label>
+        <p-inputNumber id="odometer" formControlName="odometer" [min]="0"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="acquisition_cost">Acquisition Cost ($) *</label>
+        <p-inputNumber id="acquisition_cost" formControlName="acquisition_cost" [min]="0"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="status">Status *</label>
+        <select id="status" formControlName="status">
+          <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="region">Region *</label>
+        <select id="region" formControlName="region">
+          <option *ngFor="let region of regions" [value]="region">{{ region }}</option>
+        </select>
+      </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <p-button label="Cancel" (onClick)="displayDialog = false" text></p-button>
+      <p-button label="Save" (onClick)="saveVehicle()" [loading]="loading"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <p-toast></p-toast>
+  <p-confirmDialog [style]="{ width: '400px' }"></p-confirmDialog>
+</div>

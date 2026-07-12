@@ -1,0 +1,138 @@
+<div class="drivers-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1>Drivers</h1>
+      <p>Manage your fleet drivers</p>
+    </div>
+    <div class="header-right">
+      <p-button label="Add Driver" icon="pi pi-plus" (onClick)="showDialog()"></p-button>
+    </div>
+  </div>
+
+  <p-card class="drivers-card">
+    <div class="table-header">
+      <p-inputGroup>
+        <input pInputText placeholder="Search drivers..." (input)="onGlobalFilter(dt, $event)" />
+        <p-inputGroupAddon>
+          <i class="pi pi-search"></i>
+        </p-inputGroupAddon>
+      </p-inputGroup>
+    </div>
+
+    <p-table
+      #dt
+      [value]="drivers"
+      [loading]="loading"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} drivers"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+          <th pSortableColumn="license_number">License Number <p-sortIcon field="license_number"></p-sortIcon></th>
+          <th pSortableColumn="license_category">Category <p-sortIcon field="license_category"></p-sortIcon></th>
+          <th pSortableColumn="license_expiry">License Expiry <p-sortIcon field="license_expiry"></p-sortIcon></th>
+          <th pSortableColumn="safety_score">Safety Score <p-sortIcon field="safety_score"></p-sortIcon></th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status"></p-sortIcon></th>
+          <th>Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-driver>
+        <tr>
+          <td>{{ driver.name }}</td>
+          <td>{{ driver.license_number }}</td>
+          <td>
+            <p-tag [value]="driver.license_category" [severity]="'info'"></p-tag>
+          </td>
+          <td>
+            <span [class.expired]="driver.is_license_expired">{{ driver.license_expiry }}</span>
+          </td>
+          <td>
+            <p-progressBar [value]="driver.safety_score * 10" [showValue]="true" [style]="{ height: '8px' }"></p-progressBar>
+          </td>
+          <td>
+            <p-tag [value]="driver.status" [style]="{ 'background-color': getStatusColor(driver.status), color: 'white' }"></p-tag>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <p-button icon="pi pi-eye" (onClick)="viewDriver(driver)" text rounded></p-button>
+              <p-button icon="pi pi-trash" (onClick)="deleteDriver(driver)" text rounded severity="danger"></p-button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="empty-message">
+            <div class="empty-state">
+              <i class="pi pi-users"></i>
+              <p>No drivers found</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <!-- Add Driver Dialog -->
+  <p-dialog
+    [(visible)]="displayDialog"
+    [style]="{ width: '500px' }"
+    header="Add New Driver"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <form>
+      <div class="form-group">
+        <label for="name">Full Name *</label>
+        <input id="name" pInputText [(ngModel)]="newDriver.name" required />
+      </div>
+
+      <div class="form-group">
+        <label for="license_number">License Number *</label>
+        <input id="license_number" pInputText [(ngModel)]="newDriver.license_number" required />
+      </div>
+
+      <div class="form-group">
+        <label for="license_category">License Category *</label>
+        <select id="license_category" [(ngModel)]="newDriver.license_category" name="license_category">
+          <option *ngFor="let category of licenseCategories" [value]="category">{{ category }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="license_expiry">License Expiry Date *</label>
+        <input id="license_expiry" type="date" [(ngModel)]="newDriver.license_expiry" name="license_expiry" />
+      </div>
+
+      <div class="form-group">
+        <label for="contact_number">Contact Number *</label>
+        <input id="contact_number" pInputText [(ngModel)]="newDriver.contact_number" required />
+      </div>
+
+      <div class="form-group">
+        <label for="safety_score">Safety Score (1-10) *</label>
+        <p-inputNumber id="safety_score" [(ngModel)]="newDriver.safety_score" [min]="1" [max]="10"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="status">Status *</label>
+        <select id="status" [(ngModel)]="newDriver.status" name="status">
+          <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+        </select>
+      </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <p-button label="Cancel" (onClick)="displayDialog = false" text></p-button>
+      <p-button label="Save" (onClick)="saveDriver()"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <p-toast></p-toast>
+  <p-confirmDialog [style]="{ width: '400px' }"></p-confirmDialog>
+</div>

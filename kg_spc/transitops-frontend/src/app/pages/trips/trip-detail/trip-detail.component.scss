@@ -1,0 +1,62 @@
+.trip-detail-container {
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+
+      h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-color);
+      }
+
+      p {
+        margin: 0;
+        color: var(--text-color-secondary);
+      }
+    }
+  }
+
+  .trip-content {
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+
+      .detail-card {
+        .detail-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.75rem 0;
+          border-bottom: 1px solid var(--surface-border);
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .label {
+            font-weight: 500;
+            color: var(--text-color-secondary);
+          }
+
+          .value {
+            font-weight: 600;
+            color: var(--text-color);
+          }
+        }
+      }
+    }
+  }
+}
+
+.w-full {
+  width: 100%;
+}

@@ -1,0 +1,171 @@
+<div class="trips-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1>Trips</h1>
+      <p>Manage fleet trips and dispatches</p>
+    </div>
+    <div class="header-right">
+      <p-button label="Create Trip" icon="pi pi-plus" (onClick)="showDialog()"></p-button>
+    </div>
+  </div>
+
+  <p-card class="trips-card">
+    <div class="table-header">
+      <p-inputGroup>
+        <input pInputText placeholder="Search trips..." (input)="onGlobalFilter(dt, $event)" />
+        <p-inputGroupAddon>
+          <i class="pi pi-search"></i>
+        </p-inputGroupAddon>
+      </p-inputGroup>
+    </div>
+
+    <p-table
+      #dt
+      [value]="trips"
+      [loading]="loading"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} trips"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="vehicle_registration">Vehicle <p-sortIcon field="vehicle_registration"></p-sortIcon></th>
+          <th pSortableColumn="driver_name">Driver <p-sortIcon field="driver_name"></p-sortIcon></th>
+          <th pSortableColumn="source">Source <p-sortIcon field="source"></p-sortIcon></th>
+          <th pSortableColumn="destination">Destination <p-sortIcon field="destination"></p-sortIcon></th>
+          <th pSortableColumn="cargo_weight">Cargo (kg) <p-sortIcon field="cargo_weight"></p-sortIcon></th>
+          <th pSortableColumn="planned_distance">Distance (km) <p-sortIcon field="planned_distance"></p-sortIcon></th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status"></p-sortIcon></th>
+          <th>Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-trip>
+        <tr>
+          <td>{{ trip.vehicle_registration }}</td>
+          <td>{{ trip.driver_name }}</td>
+          <td>{{ trip.source }}</td>
+          <td>{{ trip.destination }}</td>
+          <td>{{ trip.cargo_weight }}</td>
+          <td>{{ trip.planned_distance }}</td>
+          <td>
+            <p-tag [value]="trip.status" [style]="{ 'background-color': getStatusColor(trip.status), color: 'white' }"></p-tag>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <p-button icon="pi pi-eye" (onClick)="viewTrip(trip)" text rounded></p-button>
+              <p-button *ngIf="trip.status === 'draft'" icon="pi pi-play" (onClick)="dispatchTrip(trip)" text rounded tooltip="Dispatch"></p-button>
+              <p-button *ngIf="trip.status === 'dispatched'" icon="pi pi-check" (onClick)="showCompleteDialog(trip)" text rounded tooltip="Complete"></p-button>
+              <p-button *ngIf="trip.status === 'draft' || trip.status === 'dispatched'" icon="pi pi-times" (onClick)="cancelTrip(trip)" text rounded severity="danger" tooltip="Cancel"></p-button>
+              <p-button icon="pi pi-trash" (onClick)="deleteTrip(trip)" text rounded severity="danger"></p-button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8" class="empty-message">
+            <div class="empty-state">
+              <i class="pi pi-map"></i>
+              <p>No trips found</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <!-- Create Trip Dialog -->
+  <p-dialog
+    [(visible)]="displayDialog"
+    [style]="{ width: '500px' }"
+    header="Create New Trip"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <form>
+      <div class="form-group">
+        <label for="vehicle">Vehicle *</label>
+        <select id="vehicle" [(ngModel)]="newTrip.vehicle" name="vehicle">
+          <option [ngValue]="null">Select vehicle</option>
+          <option *ngFor="let vehicle of vehicles" [value]="vehicle.id">{{ vehicle.registration_number }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="driver">Driver *</label>
+        <select id="driver" [(ngModel)]="newTrip.driver" name="driver">
+          <option [ngValue]="null">Select driver</option>
+          <option *ngFor="let driver of drivers" [value]="driver.id">{{ driver.name }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="source">Source *</label>
+        <input id="source" pInputText [(ngModel)]="newTrip.source" placeholder="Enter source location" required />
+      </div>
+
+      <div class="form-group">
+        <label for="destination">Destination *</label>
+        <input id="destination" pInputText [(ngModel)]="newTrip.destination" placeholder="Enter destination" required />
+      </div>
+
+      <div class="form-group">
+        <label for="cargo_weight">Cargo Weight (kg) *</label>
+        <p-inputNumber id="cargo_weight" [(ngModel)]="newTrip.cargo_weight" [min]="0"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="planned_distance">Planned Distance (km) *</label>
+        <p-inputNumber id="planned_distance" [(ngModel)]="newTrip.planned_distance" [min]="0"></p-inputNumber>
+      </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <p-button label="Cancel" (onClick)="displayDialog = false" text></p-button>
+      <p-button label="Create" (onClick)="saveTrip()"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Complete Trip Dialog -->
+  <p-dialog
+    [(visible)]="displayCompleteDialog"
+    [style]="{ width: '500px' }"
+    header="Complete Trip"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <form>
+      <div class="form-group">
+        <label for="final_odometer">Final Odometer (km) *</label>
+        <p-inputNumber id="final_odometer" [(ngModel)]="completeData.final_odometer" [min]="0"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="fuel_consumed">Fuel Consumed (liters) *</label>
+        <p-inputNumber id="fuel_consumed" [(ngModel)]="completeData.fuel_consumed" [min]="0"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="actual_distance">Actual Distance (km) *</label>
+        <p-inputNumber id="actual_distance" [(ngModel)]="completeData.actual_distance" [min]="0"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="revenue">Revenue ($) *</label>
+        <p-inputNumber id="revenue" [(ngModel)]="completeData.revenue" [min]="0"></p-inputNumber>
+      </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <p-button label="Cancel" (onClick)="displayCompleteDialog = false" text></p-button>
+      <p-button label="Complete" (onClick)="completeTrip()"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <p-toast></p-toast>
+  <p-confirmDialog [style]="{ width: '400px' }"></p-confirmDialog>
+</div>

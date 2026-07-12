@@ -1,0 +1,122 @@
+<div class="expenses-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1>Expenses</h1>
+      <p>Track operational expenses</p>
+    </div>
+    <div class="header-right">
+      <p-button label="Add Expense" icon="pi pi-plus" (onClick)="showDialog()"></p-button>
+    </div>
+  </div>
+
+  <p-card class="expenses-card">
+    <div class="table-header">
+      <p-inputGroup>
+        <input pInputText placeholder="Search expenses..." (input)="onGlobalFilter(dt, $event)" />
+        <p-inputGroupAddon>
+          <i class="pi pi-search"></i>
+        </p-inputGroupAddon>
+      </p-inputGroup>
+    </div>
+
+    <p-table
+      #dt
+      [value]="expenses"
+      [loading]="loading"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} expenses"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="vehicle_registration">Vehicle <p-sortIcon field="vehicle_registration"></p-sortIcon></th>
+          <th pSortableColumn="vehicle_name">Vehicle Name <p-sortIcon field="vehicle_name"></p-sortIcon></th>
+          <th pSortableColumn="category">Category <p-sortIcon field="category"></p-sortIcon></th>
+          <th pSortableColumn="description">Description <p-sortIcon field="description"></p-sortIcon></th>
+          <th pSortableColumn="amount">Amount ($) <p-sortIcon field="amount"></p-sortIcon></th>
+          <th pSortableColumn="date">Date <p-sortIcon field="date"></p-sortIcon></th>
+          <th>Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-expense>
+        <tr>
+          <td>{{ expense.vehicle_registration }}</td>
+          <td>{{ expense.vehicle_name }}</td>
+          <td>
+            <p-tag [value]="expense.category" [style]="{ 'background-color': getCategoryColor(expense.category), color: 'white' }"></p-tag>
+          </td>
+          <td>{{ expense.description }}</td>
+          <td>${{ expense.amount.toLocaleString() }}</td>
+          <td>{{ expense.date }}</td>
+          <td>
+            <div class="action-buttons">
+              <p-button icon="pi pi-trash" (onClick)="deleteExpense(expense)" text rounded severity="danger"></p-button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="empty-message">
+            <div class="empty-state">
+              <i class="pi pi-wallet"></i>
+              <p>No expenses found</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <!-- Add Expense Dialog -->
+  <p-dialog
+    [(visible)]="displayDialog"
+    [style]="{ width: '500px' }"
+    header="Add Expense"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <form>
+      <div class="form-group">
+        <label for="vehicle">Vehicle *</label>
+        <select id="vehicle" [(ngModel)]="newExpense.vehicle" name="vehicle">
+          <option [ngValue]="null">Select vehicle</option>
+          <option *ngFor="let vehicle of vehicles" [value]="vehicle.id">{{ vehicle.registration_number }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="category">Category *</label>
+        <select id="category" [(ngModel)]="newExpense.category" name="category">
+          <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="amount">Amount ($) *</label>
+        <p-inputNumber id="amount" [(ngModel)]="newExpense.amount" [min]="0" [mode]="'currency'" [currency]="'USD'"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description *</label>
+        <textarea id="description" pInputTextarea [(ngModel)]="newExpense.description" rows="3" placeholder="Describe the expense" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="date">Date *</label>
+        <input id="date" type="date" [(ngModel)]="newExpense.date" name="date" />
+      </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <p-button label="Cancel" (onClick)="displayDialog = false" text></p-button>
+      <p-button label="Save" (onClick)="saveExpense()"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <p-toast></p-toast>
+  <p-confirmDialog [style]="{ width: '400px' }"></p-confirmDialog>
+</div>

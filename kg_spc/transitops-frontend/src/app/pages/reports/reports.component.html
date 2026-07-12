@@ -1,0 +1,237 @@
+<div class="reports-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1>Reports & Analytics</h1>
+      <p>View operational insights and export data</p>
+    </div>
+    <div class="header-right">
+      <select [(ngModel)]="selectedVehicle" (change)="onVehicleChange()" name="selectedVehicle">
+        <option [ngValue]="null">All Vehicles</option>
+        <option *ngFor="let vehicle of vehicles" [value]="vehicle.id">{{ vehicle.registration_number }}</option>
+      </select>
+    </div>
+  </div>
+
+  <p-progressBar *ngIf="loading" mode="indeterminate" styleClass="w-full mb-4"></p-progressBar>
+
+  <div *ngIf="!loading" class="reports-content">
+    <!-- Fleet Utilization -->
+    <p-card *ngIf="fleetUtilizationReport" header="Fleet Utilization" class="report-card">
+      <div class="utilization-summary">
+        <div class="utilization-main">
+          <div class="utilization-value">{{ fleetUtilizationReport.overall_utilization_percentage }}%</div>
+          <div class="utilization-label">Overall Utilization</div>
+        </div>
+        <div class="utilization-details">
+          <div class="detail-item">
+            <span class="detail-label">Total Vehicles:</span>
+            <span class="detail-value">{{ fleetUtilizationReport.total_vehicles }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Vehicles on Trip:</span>
+            <span class="detail-value">{{ fleetUtilizationReport.vehicles_on_trip }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="utilization-by-type">
+        <h4>By Vehicle Type</h4>
+        <div class="type-grid">
+          <div *ngFor="let item of fleetUtilizationReport.by_vehicle_type" class="type-card">
+            <div class="type-name">{{ item.vehicle_type }}</div>
+            <div class="type-stats">
+              <span class="type-count">{{ item.on_trip }} / {{ item.total }}</span>
+              <span class="type-percent">{{ item.utilization_percentage }}%</span>
+            </div>
+            <p-progressBar [value]="item.utilization_percentage" [showValue]="false"></p-progressBar>
+          </div>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Fuel Efficiency Report -->
+    <p-card header="Fuel Efficiency" class="report-card">
+      <p-table
+        [value]="fuelEfficiencyReport"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Vehicle</th>
+            <th>Distance (km)</th>
+            <th>Fuel Consumed (L)</th>
+            <th>Efficiency (km/L)</th>
+            <th>Date</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-item>
+          <tr>
+            <td>{{ item.vehicle_name }}</td>
+            <td>{{ item.distance }}</td>
+            <td>{{ item.fuel_consumed }}</td>
+            <td>
+              <p-tag [value]="item.efficiency_km_per_liter.toFixed(2)" [severity]="item.efficiency_km_per_liter > 10 ? 'success' : 'warn'"></p-tag>
+            </td>
+            <td>{{ item.date }}</td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5" class="empty-message">
+              <div class="empty-state">
+                <p>No fuel efficiency data available</p>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+
+    <!-- Operational Cost Report -->
+    <p-card header="Operational Costs" class="report-card">
+      <p-table
+        [value]="operationalCostReport"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Vehicle</th>
+            <th>Fuel Cost</th>
+            <th>Maintenance Cost</th>
+            <th>Other Expenses</th>
+            <th>Total Cost</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-item>
+          <tr>
+            <td>{{ item.vehicle_name }}</td>
+            <td>${{ item.fuel_cost.toLocaleString() }}</td>
+            <td>${{ item.maintenance_cost.toLocaleString() }}</td>
+            <td>${{ item.other_expenses.toLocaleString() }}</td>
+            <td>
+              <strong>${{ item.total_operational_cost.toLocaleString() }}</strong>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5" class="empty-message">
+              <div class="empty-state">
+                <p>No operational cost data available</p>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+
+    <!-- Vehicle ROI Report -->
+    <p-card header="Vehicle ROI" class="report-card">
+      <p-table
+        [value]="vehicleROIReport"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Vehicle</th>
+            <th>Acquisition Cost</th>
+            <th>Total Revenue</th>
+            <th>Total Cost</th>
+            <th>ROI</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-item>
+          <tr>
+            <td>{{ item.vehicle_name }}</td>
+            <td>${{ item.acquisition_cost.toLocaleString() }}</td>
+            <td>${{ item.total_revenue.toLocaleString() }}</td>
+            <td>${{ item.total_cost.toLocaleString() }}</td>
+            <td>
+              <p-tag
+                [value]="item.roi_percentage.toFixed(1) + '%'"
+                [severity]="item.roi_percentage > 0 ? 'success' : 'danger'"
+              ></p-tag>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5" class="empty-message">
+              <div class="empty-state">
+                <p>No ROI data available</p>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+
+    <!-- CSV Export Section -->
+    <p-card header="Export Data" class="report-card">
+      <div class="export-grid">
+        <div class="export-item">
+          <div class="export-icon">
+            <i class="pi pi-truck"></i>
+          </div>
+          <div class="export-info">
+            <div class="export-title">Vehicles</div>
+            <div class="export-description">Export vehicle data</div>
+          </div>
+          <p-button label="Export CSV" icon="pi pi-download" (onClick)="exportCSV('vehicles')"></p-button>
+        </div>
+
+        <div class="export-item">
+          <div class="export-icon">
+            <i class="pi pi-users"></i>
+          </div>
+          <div class="export-info">
+            <div class="export-title">Drivers</div>
+            <div class="export-description">Export driver data</div>
+          </div>
+          <p-button label="Export CSV" icon="pi pi-download" (onClick)="exportCSV('drivers')"></p-button>
+        </div>
+
+        <div class="export-item">
+          <div class="export-icon">
+            <i class="pi pi-map"></i>
+          </div>
+          <div class="export-info">
+            <div class="export-title">Trips</div>
+            <div class="export-description">Export trip data</div>
+          </div>
+          <p-button label="Export CSV" icon="pi pi-download" (onClick)="exportCSV('trips')"></p-button>
+        </div>
+
+        <div class="export-item">
+          <div class="export-icon">
+            <i class="pi pi-gas-pump"></i>
+          </div>
+          <div class="export-info">
+            <div class="export-title">Fuel Logs</div>
+            <div class="export-description">Export fuel data</div>
+          </div>
+          <p-button label="Export CSV" icon="pi pi-download" (onClick)="exportCSV('fuel')"></p-button>
+        </div>
+
+        <div class="export-item">
+          <div class="export-icon">
+            <i class="pi pi-wallet"></i>
+          </div>
+          <div class="export-info">
+            <div class="export-title">Expenses</div>
+            <div class="export-description">Export expense data</div>
+          </div>
+          <p-button label="Export CSV" icon="pi pi-download" (onClick)="exportCSV('expenses')"></p-button>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <p-toast></p-toast>
+</div>

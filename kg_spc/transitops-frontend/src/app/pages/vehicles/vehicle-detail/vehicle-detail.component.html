@@ -1,0 +1,118 @@
+<div class="vehicle-detail-container">
+  <div class="page-header">
+    <div class="header-left">
+      <p-button icon="pi pi-arrow-left" label="Back" (onClick)="goBack()" text></p-button>
+      <h1 *ngIf="vehicle">{{ vehicle.registration_number }}</h1>
+      <p *ngIf="vehicle">{{ vehicle.name }}</p>
+    </div>
+    <div class="header-right">
+      <p-button label="Edit" icon="pi pi-pencil" (onClick)="showEditDialog()"></p-button>
+      <p-button label="Delete" icon="pi pi-trash" (onClick)="deleteVehicle()" severity="danger"></p-button>
+    </div>
+  </div>
+
+  <p-progressBar *ngIf="loading" mode="indeterminate" styleClass="w-full mb-4"></p-progressBar>
+
+  <div *ngIf="!loading && vehicle" class="vehicle-content">
+    <div class="detail-grid">
+      <p-card header="Vehicle Information" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Registration Number:</span>
+          <span class="value">{{ vehicle.registration_number }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Name:</span>
+          <span class="value">{{ vehicle.name }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Type:</span>
+          <span class="value">
+            <p-tag [value]="vehicle.vehicle_type" [severity]="'info'"></p-tag>
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Status:</span>
+          <span class="value">
+            <p-tag [value]="vehicle.status" [style]="{ 'background-color': getStatusColor(vehicle.status), color: 'white' }"></p-tag>
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Region:</span>
+          <span class="value">{{ vehicle.region }}</span>
+        </div>
+      </p-card>
+
+      <p-card header="Capacity & Performance" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Max Load Capacity:</span>
+          <span class="value">{{ vehicle.max_load_capacity }} kg</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Current Odometer:</span>
+          <span class="value">{{ vehicle.odometer }} km</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Acquisition Cost:</span>
+          <span class="value">${{ vehicle.acquisition_cost.toLocaleString() }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Dispatchable:</span>
+          <span class="value">
+            <p-tag [value]="vehicle.is_dispatchable ? 'Yes' : 'No'" [severity]="vehicle.is_dispatchable ? 'success' : 'danger'"></p-tag>
+          </span>
+        </div>
+      </p-card>
+
+      <p-card header="Timestamps" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Created At:</span>
+          <span class="value">{{ vehicle.created_at | date:'medium' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Last Updated:</span>
+          <span class="value">{{ vehicle.updated_at | date:'medium' }}</span>
+        </div>
+      </p-card>
+    </div>
+  </div>
+
+  <!-- Edit Dialog -->
+  <p-dialog
+    [(visible)]="displayEditDialog"
+    [style]="{ width: '500px' }"
+    header="Edit Vehicle"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <form>
+      <div class="form-group">
+        <label for="edit_name">Vehicle Name *</label>
+        <input id="edit_name" pInputText [(ngModel)]="editVehicle.name" required />
+      </div>
+
+      <div class="form-group">
+        <label for="edit_status">Status *</label>
+        <select id="edit_status" [(ngModel)]="editVehicle.status" name="edit_status">
+          <option value="available">available</option>
+          <option value="on_trip">on_trip</option>
+          <option value="in_shop">in_shop</option>
+          <option value="retired">retired</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="edit_odometer">Odometer (km) *</label>
+        <p-inputNumber id="edit_odometer" [(ngModel)]="editVehicle.odometer" [min]="0"></p-inputNumber>
+      </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <p-button label="Cancel" (onClick)="displayEditDialog = false" text></p-button>
+      <p-button label="Save" (onClick)="updateVehicle()"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <p-toast></p-toast>
+  <p-confirmDialog [style]="{ width: '400px' }"></p-confirmDialog>
+</div>

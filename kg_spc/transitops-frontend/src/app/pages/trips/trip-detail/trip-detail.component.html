@@ -1,0 +1,87 @@
+<div class="trip-detail-container">
+  <div class="page-header">
+    <div class="header-left">
+      <p-button icon="pi pi-arrow-left" label="Back" (onClick)="goBack()" text></p-button>
+      <h1 *ngIf="trip">Trip #{{ trip?.id }}</h1>
+      <p *ngIf="trip">{{ trip?.source }} to {{ trip?.destination }}</p>
+    </div>
+  </div>
+
+  <p-progressBar *ngIf="loading" mode="indeterminate" styleClass="w-full mb-4"></p-progressBar>
+
+  <div *ngIf="!loading && trip" class="trip-content">
+    <div class="detail-grid">
+      <p-card header="Trip Information" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Status:</span>
+          <span class="value">
+            <p-tag [value]="trip?.status" [style]="{ 'background-color': getStatusColor(trip?.status || ''), color: 'white' }"></p-tag>
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Source:</span>
+          <span class="value">{{ trip?.source }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Destination:</span>
+          <span class="value">{{ trip?.destination }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Planned Distance:</span>
+          <span class="value">{{ trip?.planned_distance }} km</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Cargo Weight:</span>
+          <span class="value">{{ trip?.cargo_weight }} kg</span>
+        </div>
+      </p-card>
+
+      <p-card header="Vehicle & Driver" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Vehicle:</span>
+          <span class="value">{{ trip?.vehicle_name }} ({{ trip?.vehicle_registration }})</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Driver:</span>
+          <span class="value">{{ trip?.driver_name }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Created By:</span>
+          <span class="value">{{ trip?.created_by_name || 'System' }}</span>
+        </div>
+      </p-card>
+
+      <p-card header="Trip Results" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Actual Distance:</span>
+          <span class="value">{{ trip?.actual_distance || 'N/A' }} km</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Fuel Consumed:</span>
+          <span class="value">{{ trip?.fuel_consumed || 'N/A' }} liters</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Final Odometer:</span>
+          <span class="value">{{ trip?.final_odometer || 'N/A' }} km</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Revenue:</span>
+          <span class="value">${{ trip?.revenue?.toLocaleString() || '0' }}</span>
+        </div>
+      </p-card>
+
+      <p-card header="Timestamps" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Created At:</span>
+          <span class="value">{{ trip?.created_at | date:'medium' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Last Updated:</span>
+          <span class="value">{{ trip?.updated_at | date:'medium' }}</span>
+        </div>
+      </p-card>
+    </div>
+  </div>
+
+  <p-toast></p-toast>
+</div>

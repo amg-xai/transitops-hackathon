@@ -1,0 +1,72 @@
+<div class="maintenance-detail-container">
+  <div class="page-header">
+    <div class="header-left">
+      <p-button icon="pi pi-arrow-left" label="Back" (onClick)="goBack()" text></p-button>
+      <h1 *ngIf="log">Maintenance Log #{{ log?.id }}</h1>
+      <p *ngIf="log">{{ log?.description }}</p>
+    </div>
+    <div class="header-right">
+      <p-button *ngIf="log?.status === 'active'" label="Close" icon="pi pi-check" (onClick)="closeMaintenanceLog()"></p-button>
+      <p-button label="Delete" icon="pi pi-trash" (onClick)="deleteMaintenanceLog()" severity="danger"></p-button>
+    </div>
+  </div>
+
+  <p-progressBar *ngIf="loading" mode="indeterminate" styleClass="w-full mb-4"></p-progressBar>
+
+  <div *ngIf="!loading && log" class="maintenance-content">
+    <div class="detail-grid">
+      <p-card header="Maintenance Information" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Status:</span>
+          <span class="value">
+            <p-tag [value]="log?.status" [style]="{ 'background-color': getStatusColor(log?.status || ''), color: 'white' }"></p-tag>
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Description:</span>
+          <span class="value">{{ log?.description }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Cost:</span>
+          <span class="value">${{ log?.cost?.toLocaleString() }}</span>
+        </div>
+      </p-card>
+
+      <p-card header="Vehicle Information" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Vehicle:</span>
+          <span class="value">{{ log?.vehicle_name }} ({{ log?.vehicle_registration }})</span>
+        </div>
+      </p-card>
+
+      <p-card header="Schedule" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Start Date:</span>
+          <span class="value">{{ log?.start_date }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">End Date:</span>
+          <span class="value">{{ log?.end_date || 'In Progress' }}</span>
+        </div>
+      </p-card>
+
+      <p-card header="Timestamps" class="detail-card">
+        <div class="detail-row">
+          <span class="label">Created At:</span>
+          <span class="value">{{ log?.created_at | date:'medium' }}</span>
+        </div>
+      </p-card>
+    </div>
+
+    <div *ngIf="log?.status === 'active'" class="info-card">
+      <i class="pi pi-info-circle"></i>
+      <div class="info-content">
+        <div class="info-title">Active Maintenance</div>
+        <div class="info-message">This vehicle is currently marked as "In Shop" and cannot be dispatched until maintenance is closed.</div>
+      </div>
+    </div>
+  </div>
+
+  <p-toast></p-toast>
+  <p-confirmDialog [style]="{ width: '400px' }"></p-confirmDialog>
+</div>

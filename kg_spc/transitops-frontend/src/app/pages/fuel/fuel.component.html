@@ -1,0 +1,111 @@
+<div class="fuel-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1>Fuel Logs</h1>
+      <p>Track fuel consumption and costs</p>
+    </div>
+    <div class="header-right">
+      <p-button label="Add Fuel Log" icon="pi pi-plus" (onClick)="showDialog()"></p-button>
+    </div>
+  </div>
+
+  <p-card class="fuel-card">
+    <div class="table-header">
+      <p-inputGroup>
+        <input pInputText placeholder="Search fuel logs..." (input)="onGlobalFilter(dt, $event)" />
+        <p-inputGroupAddon>
+          <i class="pi pi-search"></i>
+        </p-inputGroupAddon>
+      </p-inputGroup>
+    </div>
+
+    <p-table
+      #dt
+      [value]="fuelLogs"
+      [loading]="loading"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} logs"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="vehicle_registration">Vehicle <p-sortIcon field="vehicle_registration"></p-sortIcon></th>
+          <th pSortableColumn="vehicle_name">Vehicle Name <p-sortIcon field="vehicle_name"></p-sortIcon></th>
+          <th pSortableColumn="liters">Liters <p-sortIcon field="liters"></p-sortIcon></th>
+          <th pSortableColumn="cost">Cost ($) <p-sortIcon field="cost"></p-sortIcon></th>
+          <th pSortableColumn="date">Date <p-sortIcon field="date"></p-sortIcon></th>
+          <th>Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-log>
+        <tr>
+          <td>{{ log.vehicle_registration }}</td>
+          <td>{{ log.vehicle_name }}</td>
+          <td>{{ log.liters }}</td>
+          <td>${{ log.cost.toLocaleString() }}</td>
+          <td>{{ log.date }}</td>
+          <td>
+            <div class="action-buttons">
+              <p-button icon="pi pi-trash" (onClick)="deleteFuelLog(log)" text rounded severity="danger"></p-button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="empty-message">
+            <div class="empty-state">
+              <i class="pi pi-gas-pump"></i>
+              <p>No fuel logs found</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <!-- Add Fuel Log Dialog -->
+  <p-dialog
+    [(visible)]="displayDialog"
+    [style]="{ width: '500px' }"
+    header="Add Fuel Log"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    <form>
+      <div class="form-group">
+        <label for="vehicle">Vehicle *</label>
+        <select id="vehicle" [(ngModel)]="newLog.vehicle" name="vehicle">
+          <option [ngValue]="null">Select vehicle</option>
+          <option *ngFor="let vehicle of vehicles" [value]="vehicle.id">{{ vehicle.registration_number }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="liters">Liters *</label>
+        <p-inputNumber id="liters" [(ngModel)]="newLog.liters" [min]="0" [mode]="'decimal'" [minFractionDigits]="2"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="cost">Cost ($) *</label>
+        <p-inputNumber id="cost" [(ngModel)]="newLog.cost" [min]="0" [mode]="'currency'" [currency]="'USD'"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="date">Date *</label>
+        <input id="date" type="date" [(ngModel)]="newLog.date" name="date" />
+      </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <p-button label="Cancel" (onClick)="displayDialog = false" text></p-button>
+      <p-button label="Save" (onClick)="saveFuelLog()"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <p-toast></p-toast>
+  <p-confirmDialog [style]="{ width: '400px' }"></p-confirmDialog>
+</div>

@@ -1,3 +1,7 @@
+"""
+Views to manage vehicle records.
+Includes filtering, sorting, search functionality, CRUD forms, and document management restricted by user roles.
+"""
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -8,6 +12,12 @@ from .models import Vehicle, VehicleDocument
 
 @login_required
 def vehicle_list(request):
+    """
+    Renders the vehicle registry catalog. Supports:
+    - Search: by name, registration number, or dispatch region.
+    - Filters: by vehicle status and type.
+    - Sorting: dynamic columns configuration.
+    """
     vehicles = Vehicle.objects.all()
 
     q = request.GET.get('q', '').strip()
@@ -38,6 +48,11 @@ def vehicle_list(request):
 
 @role_required('fleet_manager', redirect_to='vehicle_list')
 def vehicle_add(request):
+    """
+    Renders/handles the vehicle addition form.
+    Only users with the 'fleet_manager' role are allowed to add new vehicles.
+    Ensures registration number uniqueness is enforced.
+    """
     if request.method == 'POST':
         try:
             Vehicle.objects.create(
@@ -57,6 +72,11 @@ def vehicle_add(request):
 
 @role_required('fleet_manager', redirect_to='vehicle_list')
 def vehicle_edit(request, pk):
+    """
+    Renders/handles the vehicle editing form.
+    Allows editing fields such as capacity, odometer, and status.
+    Ensures registration number updates do not conflict.
+    """
     vehicle = get_object_or_404(Vehicle, pk=pk)
     if request.method == 'POST':
         vehicle.registration_number = request.POST['registration_number']
@@ -77,6 +97,10 @@ def vehicle_edit(request, pk):
 
 @role_required('fleet_manager', redirect_to='vehicle_list')
 def vehicle_delete(request, pk):
+    """
+    Deletes the specified vehicle after confirmation.
+    Only authorized for fleet managers.
+    """
     vehicle = get_object_or_404(Vehicle, pk=pk)
     if request.method == 'POST':
         vehicle.delete()
@@ -86,12 +110,19 @@ def vehicle_delete(request, pk):
 
 @login_required
 def vehicle_documents(request, pk):
+    """
+    Renders the regulatory documents checklist for a given vehicle.
+    """
     vehicle = get_object_or_404(Vehicle, pk=pk)
     documents = vehicle.documents.all().order_by('-uploaded_at')
     return render(request, 'vehicles/vehicle_documents.html', {'vehicle': vehicle, 'documents': documents})
 
 @role_required('fleet_manager', redirect_to='vehicle_list')
 def document_upload(request, pk):
+    """
+    Uploads a new regulatory compliance document for a vehicle.
+    Restricted to fleet managers.
+    """
     vehicle = get_object_or_404(Vehicle, pk=pk)
     if request.method == 'POST':
         f = request.FILES.get('file')
@@ -111,10 +142,14 @@ def document_upload(request, pk):
 
 @role_required('fleet_manager', redirect_to='vehicle_list')
 def document_delete(request, doc_pk):
+    """
+    Deletes a vehicle compliance document.
+    Restricted to fleet managers.
+    """
     doc = get_object_or_404(VehicleDocument, pk=doc_pk)
     vehicle_pk = doc.vehicle.pk
     if request.method == 'POST':
         doc.file.delete(save=False)
         doc.delete()
         messages.success(request, 'Document deleted.')
-    return redirect('vehicle_documents', pk=vehicle_pk)
+    return redirect('vehicle_documents', pk=vehicle_pk)

@@ -1,3 +1,7 @@
+"""
+Management command to seed mock data for the TransitOps system.
+Provides preconfigured users, vehicles, drivers, trips, maintenance logs, and fuel entries.
+"""
 from datetime import date, timedelta
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
@@ -11,7 +15,12 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
+    """
+    Populates the database with initial records for development and demo purposes.
+    Sets up users with specific roles, vehicles across states, and sample transaction logs.
+    """
     help = "Seed demo data for TransitOps"
+
 
     def handle(self, *args, **options):
         # --- Test users, one per role ---

@@ -1,3 +1,7 @@
+"""
+Views for the core operational analytics dashboard.
+Aggregates key metrics (KPIs), calculates fuel efficiency and ROI, and supports CSV exporting.
+"""
 import csv
 from decimal import Decimal
 
@@ -14,6 +18,11 @@ from trips.models import Trip
 
 @login_required
 def dashboard(request):
+    """
+    Renders the primary operational KPI dashboard.
+    Supports filtering vehicles by type, status, and region.
+    Displays counts of vehicles, trips, drivers, and calculates fleet utilization.
+    """
     vtype = request.GET.get('vehicle_type', '')
     status = request.GET.get('status', '')
     region = request.GET.get('region', '')
@@ -52,7 +61,13 @@ def dashboard(request):
 
 
 def _build_vehicle_report_rows():
-    """One row per vehicle: fuel efficiency, cost breakdown, ROI."""
+    """
+    Helper function to aggregate operational metrics per vehicle.
+    Calculates:
+    - Fuel Efficiency (km/L) = completed trip distance / completed trip fuel
+    - Operational Cost = fuel cost + maintenance cost
+    - ROI (%) = (completed trip revenue - operational cost) / vehicle acquisition cost * 100
+    """
     rows = []
     for v in Vehicle.objects.all():
         completed = v.trips.filter(status='completed')
@@ -84,6 +99,10 @@ def _build_vehicle_report_rows():
 
 @role_required('fleet_manager', 'financial_analyst', redirect_to='dashboard')
 def reports(request):
+    """
+    Renders fleet report table and structures data for Chart.js dashboard charts.
+    Accessible only by fleet managers and financial analysts.
+    """
     rows = _build_vehicle_report_rows()
     total_vehicles = Vehicle.objects.count()
     active_vehicles = Vehicle.objects.filter(status='on_trip').count()
@@ -101,6 +120,10 @@ def reports(request):
 
 @role_required('fleet_manager', 'financial_analyst', redirect_to='dashboard')
 def reports_csv(request):
+    """
+    Exports the vehicle operational reports to a downloadable CSV file.
+    Accessible only by fleet managers and financial analysts.
+    """
     rows = _build_vehicle_report_rows()
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="transitops_report.csv"'
@@ -122,4 +145,4 @@ def reports_csv(request):
             r['operational_cost'], r['revenue'],
             r['roi'] if r['roi'] is not None else '',
         ])
-    return response
+    return response

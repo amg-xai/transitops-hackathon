@@ -1,3 +1,7 @@
+"""
+Views for handling the trip lifecycle workflow.
+Manages adding trips, dispatching them, recording execution stats, and cancelling tasks.
+"""
 from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -11,6 +15,11 @@ from drivers.models import Driver
 
 @login_required
 def trip_list(request):
+    """
+    Renders the trip board listing.
+    Supports searching by source/destination, vehicle reg, or driver name,
+    and sorting by date, status, or payload weight.
+    """
     trips = Trip.objects.select_related('vehicle', 'driver').all()
 
     q = request.GET.get('q', '').strip()
@@ -38,6 +47,11 @@ def trip_list(request):
 
 @role_required('fleet_manager', 'driver', redirect_to='trip_list')
 def trip_add(request):
+    """
+    Renders/handles the trip creation form.
+    Only allows 'fleet_manager' or 'driver' roles to add new trips.
+    Enforces capacity check before saving trip draft.
+    """
     if request.method == 'POST':
         trip = Trip(
             vehicle=get_object_or_404(Vehicle, pk=request.POST['vehicle']),
@@ -62,6 +76,10 @@ def trip_add(request):
 
 @role_required('fleet_manager', 'driver', redirect_to='trip_list')
 def trip_dispatch(request, pk):
+    """
+    Executes dispatch on a Draft trip.
+    Checks availability requirements of vehicle/driver and marks them as 'on_trip'.
+    """
     trip = get_object_or_404(Trip, pk=pk)
     try:
         trip.dispatch()
@@ -72,6 +90,11 @@ def trip_dispatch(request, pk):
 
 @role_required('fleet_manager', 'driver', redirect_to='trip_list')
 def trip_complete(request, pk):
+    """
+    Renders/handles the trip completion form.
+    Collects actual distance, final odometer reading, fuel consumed, and revenue.
+    Restores the vehicle/driver availability states and syncs vehicle odometer.
+    """
     trip = get_object_or_404(Trip, pk=pk)
     if request.method == 'POST':
         try:
@@ -89,6 +112,10 @@ def trip_complete(request, pk):
 
 @role_required('fleet_manager', 'driver', redirect_to='trip_list')
 def trip_cancel(request, pk):
+    """
+    Cancels a Draft or Dispatched trip.
+    Releases vehicles and drivers back to 'available' status.
+    """
     trip = get_object_or_404(Trip, pk=pk)
     try:
         trip.cancel()

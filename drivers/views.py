@@ -1,3 +1,8 @@
+"""
+Views for managing driver records.
+Provides listings, search, filtering, role-based forms to add, edit, or delete driver profiles,
+and views to trigger manual email license reminders.
+"""
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -11,6 +16,13 @@ from .models import Driver
 
 @login_required
 def driver_list(request):
+    """
+    Renders the driver directory table.
+    Supports:
+    - Search: by name or license number.
+    - Filters: by current status.
+    - Sorting: dynamic column ordering (safety score, license expiry, name, etc.).
+    """
     drivers = Driver.objects.all()
 
     q = request.GET.get('q', '').strip()
@@ -35,6 +47,11 @@ def driver_list(request):
 
 @role_required('fleet_manager', 'safety_officer', redirect_to='driver_list')
 def driver_add(request):
+    """
+    Renders/handles the driver addition form.
+    Allows either 'fleet_manager' or 'safety_officer' to add driver profiles.
+    Enforces uniqueness of the driver's license number.
+    """
     if request.method == 'POST':
         try:
             Driver.objects.create(
@@ -54,6 +71,11 @@ def driver_add(request):
 
 @role_required('fleet_manager', 'safety_officer', redirect_to='driver_list')
 def driver_edit(request, pk):
+    """
+    Renders/handles the driver profile editing form.
+    Accessible by fleet managers and safety compliance officers.
+    Allows updating safety scores, license expirations, email contact, and status flags.
+    """
     driver = get_object_or_404(Driver, pk=pk)
     if request.method == 'POST':
         driver.name             = request.POST['name']
@@ -74,6 +96,10 @@ def driver_edit(request, pk):
 
 @role_required('fleet_manager', redirect_to='driver_list')
 def driver_delete(request, pk):
+    """
+    Deletes the specified driver profile from the database.
+    Restricted strictly to the 'fleet_manager' role.
+    """
     driver = get_object_or_404(Driver, pk=pk)
     if request.method == 'POST':
         driver.delete()
@@ -83,6 +109,10 @@ def driver_delete(request, pk):
 
 @role_required('fleet_manager', 'safety_officer', redirect_to='driver_list')
 def driver_send_reminder(request, pk):
+    """
+    Triggers an email to the driver reminding them of upcoming or passed license expiration.
+    Only accessible by fleet managers and safety compliance officers.
+    """
     driver = get_object_or_404(Driver, pk=pk)
     if not driver.email:
         messages.error(request, f"{driver.name} has no email on file — add one before sending a reminder.")
@@ -101,4 +131,4 @@ def driver_send_reminder(request, pk):
     driver.last_reminder_sent_at = timezone.now()
     driver.save(update_fields=['last_reminder_sent_at'])
     messages.success(request, f"Reminder email sent to {driver.name} ({driver.email}).")
-    return redirect('driver_list')
+    return redirect('driver_list')

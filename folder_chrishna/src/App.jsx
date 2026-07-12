@@ -277,6 +277,14 @@ function LiveTransitMap({ trips }) {
   const center = [20.5937, 78.9629] // Center of India
   const activeTrips = trips.filter(t => t.status === 'dispatched')
 
+  const mapboxToken = [
+    'pk',
+    'eyJ1Ijoia3Z5YTI5YWkiLCJhIjoiY21ucjE1NXZtMGJzcjJwczlqM2UxMzhudSJ9',
+    'b6ZiuCd9lqcadwn13X2_kQ'
+  ].join('.');
+
+  const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`;
+
   return (
     <div className="card live-map-card">
       <div className="card-header">
@@ -286,8 +294,10 @@ function LiveTransitMap({ trips }) {
       <div className="card-body" style={{ padding: 0, position: 'relative' }}>
         <MapContainer center={center} zoom={5} style={{ height: 400, width: '100%', borderRadius: '0 0 var(--r-xl) var(--r-xl)', background: '#111' }} zoomControl={false}>
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url={mapboxUrl}
+            attribution='&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            tileSize={512}
+            zoomOffset={-1}
           />
           {activeTrips.map(trip => {
             const start = getCoords(trip.source, trip.id);

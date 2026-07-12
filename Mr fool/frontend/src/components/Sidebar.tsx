@@ -5,9 +5,9 @@ import {
   Users, 
   TrendingUp, 
   ChevronLeft, 
-  ChevronRight,
-  ShieldCheck
+  ChevronRight
 } from 'lucide-react';
+import LogoImage from '../assets/logo.png';
 
 interface SidebarProps {
   activeTab: string;
@@ -37,18 +37,11 @@ export const Sidebar = ({
     >
       <div>
         {/* Logo Section */}
-        <div className="flex items-center gap-3 px-2 py-4 border-b border-white/5 overflow-hidden">
-          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shadow-lg shadow-accent/40 flex-shrink-0">
-            <ShieldCheck className="w-5 h-5 text-text-primary" />
-          </div>
-          {!isCollapsed && (
-            <motion.span 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="font-bold text-lg tracking-wider text-text-primary uppercase"
-            >
-              TransitOps
-            </motion.span>
+        <div className="flex items-center justify-center py-4 border-b border-white/5 overflow-hidden">
+          {isCollapsed ? (
+            <img src={LogoImage} className="w-8 h-8 object-contain" alt="TransitOps" />
+          ) : (
+            <img src={LogoImage} className="h-9 w-auto object-contain" alt="TransitOps" />
           )}
         </div>
 

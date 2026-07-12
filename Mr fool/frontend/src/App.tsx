@@ -5,12 +5,14 @@ import { FleetCommandCenter } from './components/FleetCommandCenter';
 import { VehicleInspector3D } from './components/VehicleInspector3D';
 import { DriverSafety } from './components/DriverSafety';
 import { ExecutiveROI } from './components/ExecutiveROI';
+import { LandingPage } from './components/LandingPage';
 import { Sparkles, X, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type Message = { sender: 'user' | 'ai'; text: string };
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isAIOpen, setIsAIOpen] = useState<boolean>(false);
@@ -38,6 +40,10 @@ function App() {
       setChatLog(prev => [...prev, { sender: 'ai', text: reply }]);
     }, 800);
   };
+
+  if (!isLoggedIn) {
+    return <LandingPage onEnter={() => setIsLoggedIn(true)} />;
+  }
 
   return (
     <div className="flex bg-background min-h-screen text-text-primary overflow-hidden relative font-sans">

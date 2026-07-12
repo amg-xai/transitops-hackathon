@@ -13,6 +13,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { MapboxTelemetry } from './MapboxTelemetry';
 
 // Seed mock data for sparkline charts
 const sparkData = [
@@ -25,6 +26,7 @@ const costData = [
 export const FleetCommandCenter = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [showWeather, setShowWeather] = useState(false);
+  const [mapType, setMapType] = useState<'vector' | 'mapbox'>('vector');
 
   const kpis = [
     { 
@@ -181,59 +183,73 @@ export const FleetCommandCenter = () => {
               <MapPin className="w-4 h-4 text-accent" />
               Live Telemetry Operations Map
             </span>
-            <button 
-              onClick={() => setShowWeather(!showWeather)}
-              className={`px-3 py-1 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
-                showWeather ? 'bg-warning/15 border-warning text-warning' : 'bg-white/5 border-white/5 text-text-muted'
-              }`}
-            >
-              Weather Radar
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setMapType(mapType === 'vector' ? 'mapbox' : 'vector')}
+                className={`px-3 py-1 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                  mapType === 'mapbox' ? 'bg-accent/15 border-accent text-accent' : 'bg-white/5 border-white/5 text-text-muted hover:border-white/10 hover:text-text-primary'
+                }`}
+              >
+                {mapType === 'mapbox' ? 'Vector Map' : 'Mapbox Sat'}
+              </button>
+              <button 
+                onClick={() => setShowWeather(!showWeather)}
+                className={`px-3 py-1 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                  showWeather ? 'bg-warning/15 border-warning text-warning' : 'bg-white/5 border-white/5 text-text-muted hover:border-white/10 hover:text-text-primary'
+                }`}
+              >
+                Weather Radar
+              </button>
+            </div>
           </div>
 
-          {/* SVG Vector Logistics Map with glowing paths and active routes */}
-          <div className="flex-1 w-full flex items-center justify-center relative my-4">
-            <svg viewBox="0 0 800 400" className="w-full h-full opacity-60">
-              {/* Background Network Nodes */}
-              <circle cx="150" cy="120" r="4" fill="#3b82f6" className="animate-ping" />
-              <circle cx="150" cy="120" r="3" fill="#3b82f6" />
-              <text x="140" y="105" fill="#94a3b8" fontSize="10" fontWeight="bold">PUNE HUB</text>
+          {/* Map Display Panel */}
+          <div className="flex-1 w-full flex items-center justify-center relative my-4 min-h-[300px]">
+            {mapType === 'mapbox' ? (
+              <MapboxTelemetry />
+            ) : (
+              <svg viewBox="0 0 800 400" className="w-full h-full opacity-60">
+                {/* Background Network Nodes */}
+                <circle cx="150" cy="120" r="4" fill="#3b82f6" className="animate-ping" />
+                <circle cx="150" cy="120" r="3" fill="#3b82f6" />
+                <text x="140" y="105" fill="#94a3b8" fontSize="10" fontWeight="bold">PUNE HUB</text>
 
-              <circle cx="450" cy="180" r="3" fill="#475569" />
-              <text x="440" y="200" fill="#64748b" fontSize="10">DELHI HUB</text>
+                <circle cx="450" cy="180" r="3" fill="#475569" />
+                <text x="440" y="200" fill="#64748b" fontSize="10">DELHI HUB</text>
 
-              <circle cx="320" cy="280" r="4" fill="#22c55e" className="animate-ping" />
-              <circle cx="320" cy="280" r="3" fill="#22c55e" />
-              <text x="310" y="265" fill="#94a3b8" fontSize="10" fontWeight="bold">MUMBAI PORT</text>
+                <circle cx="320" cy="280" r="4" fill="#22c55e" className="animate-ping" />
+                <circle cx="320" cy="280" r="3" fill="#22c55e" />
+                <text x="310" y="265" fill="#94a3b8" fontSize="10" fontWeight="bold">MUMBAI PORT</text>
 
-              <circle cx="600" cy="100" r="3" fill="#475569" />
-              <text x="590" y="85" fill="#64748b" fontSize="10">KOLKATA DEPOT</text>
+                <circle cx="600" cy="100" r="3" fill="#475569" />
+                <text x="590" y="85" fill="#64748b" fontSize="10">KOLKATA DEPOT</text>
 
-              <circle cx="500" cy="320" r="4" fill="#3b82f6" className="animate-ping" />
-              <circle cx="500" cy="320" r="3" fill="#3b82f6" />
-              <text x="490" y="340" fill="#94a3b8" fontSize="10" fontWeight="bold">BANGALORE HQ</text>
+                <circle cx="500" cy="320" r="4" fill="#3b82f6" className="animate-ping" />
+                <circle cx="500" cy="320" r="3" fill="#3b82f6" />
+                <text x="490" y="340" fill="#94a3b8" fontSize="10" fontWeight="bold">BANGALORE HQ</text>
 
-              {/* Active Route Path Lines */}
-              <path d="M150,120 Q235,200 320,280" fill="none" stroke="#3b82f6" strokeWidth="2" strokeDasharray="5,5" className="animate-[dash_10s_linear_infinite]" />
-              <path d="M320,280 Q410,300 500,320" fill="none" stroke="#22c55e" strokeWidth="2" />
-              <path d="M150,120 Q375,110 600,100" fill="none" stroke="#475569" strokeWidth="1" strokeDasharray="3,3" />
+                {/* Active Route Path Lines */}
+                <path d="M150,120 Q235,200 320,280" fill="none" stroke="#3b82f6" strokeWidth="2" strokeDasharray="5,5" className="animate-[dash_10s_linear_infinite]" />
+                <path d="M320,280 Q410,300 500,320" fill="none" stroke="#22c55e" strokeWidth="2" />
+                <path d="M150,120 Q375,110 600,100" fill="none" stroke="#475569" strokeWidth="1" strokeDasharray="3,3" />
 
-              {/* Moving Vehicle Icons */}
-              <g className="animate-[bounce_2s_infinite]">
-                <circle cx="230" cy="178" r="6" fill="#3b82f6" />
-                <circle cx="230" cy="178" r="10" fill="none" stroke="#3b82f6" strokeWidth="1" className="animate-ping" />
-              </g>
-              
-              <g className="animate-[bounce_3s_infinite]">
-                <circle cx="410" cy="300" r="6" fill="#22c55e" />
-                <circle cx="410" cy="300" r="10" fill="none" stroke="#22c55e" strokeWidth="1" className="animate-ping" />
-              </g>
+                {/* Moving Vehicle Icons */}
+                <g className="animate-[bounce_2s_infinite]">
+                  <circle cx="230" cy="178" r="6" fill="#3b82f6" />
+                  <circle cx="230" cy="178" r="10" fill="none" stroke="#3b82f6" strokeWidth="1" className="animate-ping" />
+                </g>
+                
+                <g className="animate-[bounce_3s_infinite]">
+                  <circle cx="410" cy="300" r="6" fill="#22c55e" />
+                  <circle cx="410" cy="300" r="10" fill="none" stroke="#22c55e" strokeWidth="1" className="animate-ping" />
+                </g>
 
-              {/* Weather Overlay Radar Glow */}
-              {showWeather && (
-                <path d="M100,50 Q200,80 300,40 Q400,60 500,50" fill="rgba(245, 158, 11, 0.08)" stroke="rgba(245, 158, 11, 0.3)" strokeWidth="8" className="animate-pulse" />
-              )}
-            </svg>
+                {/* Weather Overlay Radar Glow */}
+                {showWeather && (
+                  <path d="M100,50 Q200,80 300,40 Q400,60 500,50" fill="rgba(245, 158, 11, 0.08)" stroke="rgba(245, 158, 11, 0.3)" strokeWidth="8" className="animate-pulse" />
+                )}
+              </svg>
+            )}
           </div>
 
           <div className="flex items-center justify-between border-t border-white/5 pt-4 text-xs text-text-muted">

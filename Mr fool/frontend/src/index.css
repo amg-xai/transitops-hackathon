@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #09090B;
-  --color-surface: #111827;
-  --color-elevated: #1F2937;
-  --color-accent: #2563EB;
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --color-text-primary: #F9FAFB;
-  --color-text-muted: #94A3B8;
+  --color-background: #051424;
+  --color-surface: #0d1c2d;
+  --color-elevated: #1c2b3c;
+  --color-accent: #2563eb;
+  --color-success: #4ae176;
+  --color-warning: #ffb95f;
+  --color-danger: #ffb4ab;
+  --color-text-primary: #d4e4fa;
+  --color-text-muted: #c3c6d7;
 }
 
 body {
@@ -20,12 +20,12 @@ body {
   padding: 0;
 }
 
-/* Glassmorphism utility classes */
+/* Glassmorphism utility classes styled for Lumina Intelligence */
 .glass {
-  background: rgba(17, 24, 39, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(13, 28, 45, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 228, 250, 0.08);
 }
 
 .glass-hover {
@@ -33,8 +33,8 @@ body {
 }
 
 .glass-hover:hover {
-  background: rgba(31, 41, 55, 0.8);
+  background: rgba(28, 43, 60, 0.85);
   border-color: rgba(37, 99, 235, 0.4);
-  box-shadow: 0 0 20px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 25px rgba(37, 99, 235, 0.2);
   transform: translateY(-2px);
 }

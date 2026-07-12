@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold">Reports & Analytics</h2>
+  <a href="{% url 'reports_csv' %}" class="btn btn-outline-primary"><i class="bi bi-download"></i> Export CSV</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card kpi-card p-3 text-center">
+      <div class="text-muted small">Fleet Utilization</div>
+      <div class="fs-2 fw-bold text-info">{{ fleet_utilization }}%</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card table-card p-3">
+      <h6 class="fw-bold">Operational Cost by Vehicle (₹)</h6>
+      <canvas id="costChart" height="180"></canvas>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card table-card p-3">
+      <h6 class="fw-bold">ROI by Vehicle (%)</h6>
+      <canvas id="roiChart" height="180"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="card table-card p-3">
+  <table class="table table-hover table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Vehicle</th><th>Type</th><th>Region</th>
+        <th>Distance (km)</th><th>Fuel (L)</th><th>Efficiency (km/L)</th>
+        <th>Fuel Cost</th><th>Maint. Cost</th><th>Other Exp.</th>
+        <th>Operational Cost</th><th>Revenue</th><th>ROI %</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="fw-semibold">{{ r.vehicle.registration_number }}</td>
+        <td>{{ r.vehicle.get_vehicle_type_display }}</td>
+        <td>{{ r.vehicle.region|default:"—" }}</td>
+        <td>{{ r.total_distance|floatformat:1 }}</td>
+        <td>{{ r.total_fuel_liters|floatformat:1 }}</td>
+        <td>{% if r.fuel_efficiency %}{{ r.fuel_efficiency }}{% else %}—{% endif %}</td>
+        <td>₹{{ r.fuel_cost|intcomma }}</td>
+        <td>₹{{ r.maintenance_cost|intcomma }}</td>
+        <td>₹{{ r.other_expenses|intcomma }}</td>
+        <td class="fw-semibold">₹{{ r.operational_cost|intcomma }}</td>
+        <td>₹{{ r.revenue|intcomma }}</td>
+        <td class="fw-semibold {% if r.roi >= 0 %}text-success{% elif r.roi != None %}text-danger{% endif %}">
+          {% if r.roi != None %}{{ r.roi }}%{% else %}—{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="12" class="text-center text-muted">No vehicles yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{{ chart_labels|json_script:"chart-labels" }}
+{{ chart_operational_cost|json_script:"chart-cost" }}
+{{ chart_roi|json_script:"chart-roi" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  const labels = JSON.parse(document.getElementById('chart-labels').textContent);
+  const costData = JSON.parse(document.getElementById('chart-cost').textContent);
+  const roiData = JSON.parse(document.getElementById('chart-roi').textContent);
+
+  new Chart(document.getElementById('costChart'), {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ label: 'Operational Cost (₹)', data: costData, backgroundColor: '#0d6efd' }] },
+    options: { plugins: { legend: { display: false } } }
+  });
+
+  new Chart(document.getElementById('roiChart'), {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ label: 'ROI (%)', data: roiData, backgroundColor: roiData.map(v => v >= 0 ? '#198754' : '#dc3545') }] },
+    options: { plugins: { legend: { display: false } } }
+  });
+</script>
+{% endblock %}

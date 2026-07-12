@@ -1,7 +1,10 @@
+from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from core.permissions import role_required
 from .models import Trip
 from vehicles.models import Vehicle
 from drivers.models import Driver
@@ -9,9 +12,31 @@ from drivers.models import Driver
 @login_required
 def trip_list(request):
     trips = Trip.objects.select_related('vehicle', 'driver').all()
-    return render(request, 'trips/trip_list.html', {'trips': trips})
 
-@login_required
+    q = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '')
+    sort = request.GET.get('sort', '-created_at')
+
+    if q:
+        trips = trips.filter(
+            Q(source__icontains=q) | Q(destination__icontains=q) |
+            Q(vehicle__registration_number__icontains=q) | Q(driver__name__icontains=q)
+        )
+    if status:
+        trips = trips.filter(status=status)
+
+    allowed_sorts = ['created_at', 'status', 'cargo_weight']
+    if sort.lstrip('-') not in allowed_sorts:
+        sort = '-created_at'
+    trips = trips.order_by(sort)
+
+    context = {
+        'trips': trips, 'q': q, 'selected_status': status, 'sort': sort,
+        'status_choices': Trip.STATUS_CHOICES,
+    }
+    return render(request, 'trips/trip_list.html', context)
+
+@role_required('fleet_manager', 'driver', redirect_to='trip_list')
 def trip_add(request):
     if request.method == 'POST':
         trip = Trip(
@@ -32,10 +57,10 @@ def trip_add(request):
             messages.error(request, str(e.message))
 
     vehicles = Vehicle.objects.filter(status='available')
-    drivers  = Driver.objects.filter(status='available')
+    drivers = Driver.objects.filter(status='available').exclude(license_expiry__lt=timezone.now().date())
     return render(request, 'trips/trip_form.html', {'vehicles': vehicles, 'drivers': drivers})
 
-@login_required
+@role_required('fleet_manager', 'driver', redirect_to='trip_list')
 def trip_dispatch(request, pk):
     trip = get_object_or_404(Trip, pk=pk)
     try:
@@ -45,7 +70,7 @@ def trip_dispatch(request, pk):
         messages.error(request, str(e.message))
     return redirect('trip_list')
 
-@login_required
+@role_required('fleet_manager', 'driver', redirect_to='trip_list')
 def trip_complete(request, pk):
     trip = get_object_or_404(Trip, pk=pk)
     if request.method == 'POST':
@@ -62,7 +87,7 @@ def trip_complete(request, pk):
             messages.error(request, str(e.message))
     return render(request, 'trips/trip_complete.html', {'trip': trip})
 
-@login_required
+@role_required('fleet_manager', 'driver', redirect_to='trip_list')
 def trip_cancel(request, pk):
     trip = get_object_or_404(Trip, pk=pk)
     try:

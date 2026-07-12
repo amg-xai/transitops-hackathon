@@ -2,12 +2,39 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h2 class="fw-bold">Drivers</h2>
-  <a href="{% url 'driver_add' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Driver</a>
+  {% if can_manage_drivers %}<a href="{% url 'driver_add' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Driver</a>{% endif %}
 </div>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+  <div class="col-auto">
+    <label class="form-label small mb-0">Search</label>
+    <input type="text" name="q" class="form-control form-control-sm" placeholder="Name or license no." value="{{ q }}">
+  </div>
+  <div class="col-auto">
+    <label class="form-label small mb-0">Status</label>
+    <select name="status" class="form-select form-select-sm">
+      <option value="">All</option>
+      {% for val, label in status_choices %}<option value="{{ val }}" {% if val == selected_status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-sm btn-primary" type="submit">Filter</button>
+    <a href="{% url 'driver_list' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+  </div>
+</form>
+
 <div class="card table-card p-3">
   <table class="table table-hover">
     <thead class="table-light">
-      <tr><th>Name</th><th>License No.</th><th>Category</th><th>Expiry</th><th>Safety Score</th><th>Status</th><th>Actions</th></tr>
+      <tr>
+        <th><a class="text-dark text-decoration-none" href="?q={{ q }}&status={{ selected_status }}&sort={% if sort == 'name' %}-{% endif %}name">Name <i class="bi bi-arrow-down-up small"></i></a></th>
+        <th><a class="text-dark text-decoration-none" href="?q={{ q }}&status={{ selected_status }}&sort={% if sort == 'license_number' %}-{% endif %}license_number">License No. <i class="bi bi-arrow-down-up small"></i></a></th>
+        <th>Category</th>
+        <th><a class="text-dark text-decoration-none" href="?q={{ q }}&status={{ selected_status }}&sort={% if sort == 'license_expiry' %}-{% endif %}license_expiry">Expiry <i class="bi bi-arrow-down-up small"></i></a></th>
+        <th><a class="text-dark text-decoration-none" href="?q={{ q }}&status={{ selected_status }}&sort={% if sort == 'safety_score' %}-{% endif %}safety_score">Safety Score <i class="bi bi-arrow-down-up small"></i></a></th>
+        <th><a class="text-dark text-decoration-none" href="?q={{ q }}&status={{ selected_status }}&sort={% if sort == 'status' %}-{% endif %}status">Status <i class="bi bi-arrow-down-up small"></i></a></th>
+        <th>Actions</th>
+      </tr>
     </thead>
     <tbody>
       {% for d in drivers %}
@@ -21,12 +48,13 @@
         <td>{{ d.safety_score }}</td>
         <td><span class="status-{{ d.status }}">{{ d.get_status_display }}</span></td>
         <td>
-          <a href="{% url 'driver_edit' d.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
-          <a href="{% url 'driver_delete' d.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+          {% if can_manage_drivers %}<a href="{% url 'driver_edit' d.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>{% endif %}
+          {% if can_delete_drivers %}<a href="{% url 'driver_delete' d.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>{% endif %}
+          {% if not can_manage_drivers and not can_delete_drivers %}<span class="text-muted">View only</span>{% endif %}
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="7" class="text-center text-muted">No drivers registered.</td></tr>
+      <tr><td colspan="7" class="text-center text-muted">No drivers found.</td></tr>
       {% endfor %}
     </tbody>
   </table>

@@ -2,12 +2,36 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h2 class="fw-bold">Trips</h2>
-  <a href="{% url 'trip_add' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Trip</a>
+  {% if can_manage_trips %}<a href="{% url 'trip_add' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Trip</a>{% endif %}
 </div>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+  <div class="col-auto">
+    <label class="form-label small mb-0">Search</label>
+    <input type="text" name="q" class="form-control form-control-sm" placeholder="Route, vehicle, driver" value="{{ q }}">
+  </div>
+  <div class="col-auto">
+    <label class="form-label small mb-0">Status</label>
+    <select name="status" class="form-select form-select-sm">
+      <option value="">All</option>
+      {% for val, label in status_choices %}<option value="{{ val }}" {% if val == selected_status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-sm btn-primary" type="submit">Filter</button>
+    <a href="{% url 'trip_list' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+  </div>
+</form>
+
 <div class="card table-card p-3">
   <table class="table table-hover">
     <thead class="table-light">
-      <tr><th>#</th><th>Vehicle</th><th>Driver</th><th>Route</th><th>Cargo (kg)</th><th>Status</th><th>Actions</th></tr>
+      <tr>
+        <th>#</th><th>Vehicle</th><th>Driver</th><th>Route</th>
+        <th><a class="text-dark text-decoration-none" href="?q={{ q }}&status={{ selected_status }}&sort={% if sort == 'cargo_weight' %}-{% endif %}cargo_weight">Cargo (kg) <i class="bi bi-arrow-down-up small"></i></a></th>
+        <th><a class="text-dark text-decoration-none" href="?q={{ q }}&status={{ selected_status }}&sort={% if sort == 'status' %}-{% endif %}status">Status <i class="bi bi-arrow-down-up small"></i></a></th>
+        <th>Actions</th>
+      </tr>
     </thead>
     <tbody>
       {% for t in trips %}
@@ -19,19 +43,19 @@
         <td>{{ t.cargo_weight }}</td>
         <td><span class="status-{{ t.status }}">{{ t.get_status_display }}</span></td>
         <td>
-          {% if t.status == 'draft' %}
-            <a href="{% url 'trip_dispatch' t.pk %}" class="btn btn-sm btn-success">Dispatch</a>
-            <a href="{% url 'trip_cancel' t.pk %}" class="btn btn-sm btn-outline-danger">Cancel</a>
-          {% elif t.status == 'dispatched' %}
-            <a href="{% url 'trip_complete' t.pk %}" class="btn btn-sm btn-primary">Complete</a>
-            <a href="{% url 'trip_cancel' t.pk %}" class="btn btn-sm btn-outline-danger">Cancel</a>
-          {% else %}
-            <span class="text-muted">—</span>
-          {% endif %}
+          {% if can_manage_trips %}
+            {% if t.status == 'draft' %}
+              <a href="{% url 'trip_dispatch' t.pk %}" class="btn btn-sm btn-success">Dispatch</a>
+              <a href="{% url 'trip_cancel' t.pk %}" class="btn btn-sm btn-outline-danger">Cancel</a>
+            {% elif t.status == 'dispatched' %}
+              <a href="{% url 'trip_complete' t.pk %}" class="btn btn-sm btn-primary">Complete</a>
+              <a href="{% url 'trip_cancel' t.pk %}" class="btn btn-sm btn-outline-danger">Cancel</a>
+            {% else %}<span class="text-muted">—</span>{% endif %}
+          {% else %}<span class="text-muted">View only</span>{% endif %}
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="7" class="text-center text-muted">No trips yet.</td></tr>
+      <tr><td colspan="7" class="text-center text-muted">No trips found.</td></tr>
       {% endfor %}
     </tbody>
   </table>

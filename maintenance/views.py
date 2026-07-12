@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from core.permissions import role_required
 from .models import MaintenanceLog
 from vehicles.models import Vehicle
 
@@ -9,7 +10,7 @@ def maintenance_list(request):
     logs = MaintenanceLog.objects.select_related('vehicle').all()
     return render(request, 'maintenance/maintenance_list.html', {'logs': logs})
 
-@login_required
+@role_required('fleet_manager', redirect_to='maintenance_list')
 def maintenance_add(request):
     if request.method == 'POST':
         MaintenanceLog.objects.create(
@@ -23,7 +24,7 @@ def maintenance_add(request):
     vehicles = Vehicle.objects.exclude(status__in=['retired', 'on_trip'])
     return render(request, 'maintenance/maintenance_form.html', {'vehicles': vehicles})
 
-@login_required
+@role_required('fleet_manager', redirect_to='maintenance_list')
 def maintenance_close(request, pk):
     log = get_object_or_404(MaintenanceLog, pk=pk)
     log.close()

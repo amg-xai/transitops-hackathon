@@ -2,6 +2,34 @@
 {% block content %}
 <h2 class="fw-bold mb-4">Dashboard</h2>
 
+<form method="get" class="row g-2 mb-4 align-items-end">
+  <div class="col-auto">
+    <label class="form-label small mb-0">Vehicle Type</label>
+    <select name="vehicle_type" class="form-select form-select-sm">
+      <option value="">All</option>
+      {% for val, label in vehicle_types %}<option value="{{ val }}" {% if val == selected_type %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <label class="form-label small mb-0">Status</label>
+    <select name="status" class="form-select form-select-sm">
+      <option value="">All</option>
+      {% for val, label in status_choices %}<option value="{{ val }}" {% if val == selected_status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <label class="form-label small mb-0">Region</label>
+    <select name="region" class="form-select form-select-sm">
+      <option value="">All</option>
+      {% for r in regions %}<option value="{{ r }}" {% if r == selected_region %}selected{% endif %}>{{ r }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-sm btn-primary" type="submit">Apply</button>
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+  </div>
+</form>
+
 <div class="row g-3 mb-4">
   <div class="col-md-3">
     <div class="card kpi-card p-3 text-center">

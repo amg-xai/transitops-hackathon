@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from core.permissions import role_required
 from .models import FuelLog, Expense
 from vehicles.models import Vehicle
 
@@ -10,7 +11,7 @@ def fuel_list(request):
     expenses  = Expense.objects.select_related('vehicle').all()
     return render(request, 'fueling/fuel_list.html', {'fuel_logs': fuel_logs, 'expenses': expenses})
 
-@login_required
+@role_required('fleet_manager', 'financial_analyst', redirect_to='fuel_list')
 def fuel_add(request):
     if request.method == 'POST':
         FuelLog.objects.create(
@@ -24,7 +25,7 @@ def fuel_add(request):
     vehicles = Vehicle.objects.all()
     return render(request, 'fueling/fuel_form.html', {'vehicles': vehicles})
 
-@login_required
+@role_required('fleet_manager', 'financial_analyst', redirect_to='fuel_list')
 def expense_add(request):
     if request.method == 'POST':
         Expense.objects.create(

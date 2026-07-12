@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #051424;
+  --color-surface: #0d1c2d;
+  --color-elevated: #1c2b3c;
+  --color-accent: #2563eb;
+  --color-success: #4ae176;
+  --color-warning: #ffb95f;
+  --color-danger: #ffb4ab;
+  --color-text-primary: #d4e4fa;
+  --color-text-muted: #c3c6d7;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Glassmorphism utility classes styled for Lumina Intelligence */
+.glass {
+  background: rgba(13, 28, 45, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 228, 250, 0.08);
+}
+
+.glass-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-hover:hover {
+  background: rgba(28, 43, 60, 0.85);
+  border-color: rgba(37, 99, 235, 0.4);
+  box-shadow: 0 0 25px rgba(37, 99, 235, 0.2);
+  transform: translateY(-2px);
+}

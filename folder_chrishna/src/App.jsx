@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Polyline, Popup, CircleMarker } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
@@ -217,109 +217,6 @@ function BarChart({ data, color = 'var(--text-primary)' }) {
 }
 
 /* ─── LIVE TRANSIT MAP ───────────────────────────────────────────────────── */
-function LiveRoute({ trip }) {
-  const [passedCoords, setPassedCoords] = useState(null);
-  const [remainingCoords, setRemainingCoords] = useState(null);
-
-  useEffect(() => {
-    const fetchRoute = async () => {
-      const token = 'YOUR_MAPBOX_TOKEN_HERE';
-      
-      const getLine = async (start, end) => {
-        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${start[1]},${start[0]};${end[1]},${end[0]}?geometries=geojson&overview=full&access_token=${token}`;
-        try {
-          const res = await fetch(url);
-          const data = await res.json();
-          if (data.routes && data.routes[0]) {
-            return data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-          }
-        } catch (e) {
-          console.error("Mapbox routing error:", e);
-        }
-        return [start, end];
-      };
-
-      if (trip.currentCoords) {
-        const [passed, remaining] = await Promise.all([
-          getLine(trip.sourceCoords, trip.currentCoords),
-          getLine(trip.currentCoords, trip.destCoords)
-        ]);
-        setPassedCoords(passed);
-        setRemainingCoords(remaining);
-      } else {
-        const remaining = await getLine(trip.sourceCoords, trip.destCoords);
-        setRemainingCoords(remaining);
-      }
-    };
-    fetchRoute();
-  }, [trip.sourceCoords, trip.currentCoords, trip.destCoords]);
-
-  const pLine = passedCoords || (trip.currentCoords ? [trip.sourceCoords, trip.currentCoords] : null);
-  const rLine = remainingCoords || (trip.currentCoords ? [trip.currentCoords, trip.destCoords] : [trip.sourceCoords, trip.destCoords]);
-
-  return (
-    <div key={trip.id}>
-      {/* Remaining Route Line (Dashed) */}
-      <Polyline 
-        positions={rLine} 
-        color="var(--s-blue)" 
-        weight={2} 
-        opacity={0.4} 
-        dashArray="5, 7"
-      />
-      
-      {/* Passed Route Line (Solid) */}
-      {pLine && (
-        <Polyline 
-          positions={pLine} 
-          color="var(--s-blue)" 
-          weight={3} 
-          opacity={0.9} 
-        />
-      )}
-
-      {/* Source Dot (Hollow) */}
-      <CircleMarker 
-        center={trip.sourceCoords} 
-        radius={5} 
-        color="var(--s-blue)" 
-        weight={2} 
-        fillOpacity={0}
-      >
-        <Popup>{trip.source} (Source)</Popup>
-      </CircleMarker>
-
-      {/* Destination Dot (Solid) */}
-      <CircleMarker 
-        center={trip.destCoords} 
-        radius={5} 
-        stroke={false} 
-        fillColor="var(--s-blue)" 
-        fillOpacity={1}
-      >
-        <Popup>{trip.destination} (Destination)</Popup>
-      </CircleMarker>
-
-      {/* Current Position (Solid with white rim for contrast) */}
-      {trip.currentCoords && (
-        <CircleMarker 
-          center={trip.currentCoords} 
-          radius={6}
-          color="#ffffff"
-          weight={2}
-          fillColor="var(--s-blue)"
-          fillOpacity={1}
-        >
-          <Popup>
-            <strong>Trip #{trip.id}</strong><br/>
-            {trip.source} &rarr; {trip.destination}
-          </Popup>
-        </CircleMarker>
-      )}
-    </div>
-  );
-}
-
 function LiveTransitMap({ trips }) {
   // Center roughly on central India
   const center = [19.0, 78.0];
@@ -334,206 +231,70 @@ function LiveTransitMap({ trips }) {
       <div className="card-body" style={{ padding: 0, position: 'relative' }}>
         <MapContainer center={center} zoom={5} style={{ height: 400, width: '100%', borderRadius: '0 0 var(--r-xl) var(--r-xl)' }} zoomControl={false}>
           <TileLayer
-            url="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/512/{z}/{x}/{y}?access_token=YOUR_MAPBOX_TOKEN_HERE"
-            tileSize={512}
-            zoomOffset={-1}
-            attribution='Map data &copy; <a href="https://www.mapbox.com/">Mapbox</a>'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; CartoDB'
           />
-          {activeTrips.map(trip => <LiveRoute key={trip.id} trip={trip} />)}
-        </MapContainer>
-        {/* Map overlay gradient for aesthetic blending */}
-        <div className="map-overlay" />
-      <div className="sidebar-footer">
-        <div style={{ padding: '8px 0', fontSize: 11.5, color: 'var(--text-tertiary)', textAlign: 'center' }}>
-          TransitOps · v1.0.0
-        </div>
-      </div>
-    </aside>
-  )
-}
+          {activeTrips.map(trip => (
+            <div key={trip.id}>
+              {/* Remaining Route Line (Dashed) */}
+              <Polyline 
+                positions={trip.currentCoords ? [trip.currentCoords, trip.destCoords] : [trip.sourceCoords, trip.destCoords]} 
+                color="var(--s-blue)" 
+                weight={2} 
+                opacity={0.4} 
+                dashArray="5, 7"
+              />
+              
+              {/* Passed Route Line (Solid) */}
+              {trip.currentCoords && (
+                <Polyline 
+                  positions={[trip.sourceCoords, trip.currentCoords]} 
+                  color="var(--s-blue)" 
+                  weight={3} 
+                  opacity={0.9} 
+                />
+              )}
 
-/* ─── DONUT CHART ────────────────────────────────────────────────────────── */
-function DonutChart({ segments }) {
-  const r = 52, cx = 60, cy = 60, stroke = 14
-  const total = segments.reduce((s, x) => s + x.value, 0)
-  let offset = 0
-  const circumference = 2 * Math.PI * r
+              {/* Source Dot (Hollow) */}
+              <CircleMarker 
+                center={trip.sourceCoords} 
+                radius={5} 
+                color="var(--s-blue)" 
+                weight={2} 
+                fillOpacity={0}
+              >
+                <Popup>{trip.source} (Source)</Popup>
+              </CircleMarker>
 
-  return (
-    <svg viewBox="0 0 120 120" width={120} height={120} style={{ overflow: 'visible' }}>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--bg-border)" strokeWidth={stroke} />
-      {segments.map((seg, i) => {
-        const pct = seg.value / total
-        const dash = pct * circumference
-        const gap = circumference - dash
-        const rotation = (offset / total) * 360 - 90
-        offset += seg.value
-        return (
-          <circle
-            key={i} cx={cx} cy={cy} r={r} fill="none"
-            stroke={seg.color} strokeWidth={stroke}
-            strokeDasharray={`${dash} ${gap}`}
-            strokeLinecap="butt"
-            transform={`rotate(${rotation} ${cx} ${cy})`}
-            style={{ transition: 'stroke-dasharray 0.5s ease' }}
-          />
-        )
-      })}
-      <text x={cx} y={cy - 4} textAnchor="middle" fill="var(--text-primary)"
-        fontSize={20} fontWeight={700} fontFamily="var(--font-display)">{total}</text>
-      <text x={cx} y={cy + 12} textAnchor="middle" fill="var(--text-tertiary)" fontSize={9}>total</text>
-    </svg>
-  )
-}
+              {/* Destination Dot (Solid) */}
+              <CircleMarker 
+                center={trip.destCoords} 
+                radius={5} 
+                stroke={false} 
+                fillColor="var(--s-blue)" 
+                fillOpacity={1}
+              >
+                <Popup>{trip.destination} (Destination)</Popup>
+              </CircleMarker>
 
-/* ─── BAR CHART ─────────────────────────────────────────────────────────── */
-function BarChart({ data, color = 'var(--text-primary)' }) {
-  const max = Math.max(...data.map(d => d.value))
-  return (
-    <div className="bar-chart">
-      {data.map((d, i) => (
-        <div className="bar-col" key={i} title={`${d.label}: ${d.value}`}>
-          <div className="bar-track">
-            <div
-              className="bar-fill"
-              style={{
-                height: `${max ? (d.value / max) * 100 : 0}%`,
-                background: color,
-                opacity: 0.8 + (i / data.length) * 0.2,
-              }}
-            />
-          </div>
-          <div className="bar-lbl">{d.label}</div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/* ─── LIVE TRANSIT MAP ───────────────────────────────────────────────────── */
-function LiveRoute({ trip }) {
-  const [passedCoords, setPassedCoords] = useState(null);
-  const [remainingCoords, setRemainingCoords] = useState(null);
-
-  useEffect(() => {
-    const fetchRoute = async () => {
-      const token = 'YOUR_MAPBOX_TOKEN_HERE';
-      
-      const getLine = async (start, end) => {
-        const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${start[1]},${start[0]};${end[1]},${end[0]}?geometries=geojson&overview=full&access_token=${token}`;
-        try {
-          const res = await fetch(url);
-          const data = await res.json();
-          if (data.routes && data.routes[0]) {
-            return data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-          }
-        } catch (e) {
-          console.error("Mapbox routing error:", e);
-        }
-        return [start, end];
-      };
-
-      if (trip.currentCoords) {
-        const [passed, remaining] = await Promise.all([
-          getLine(trip.sourceCoords, trip.currentCoords),
-          getLine(trip.currentCoords, trip.destCoords)
-        ]);
-        setPassedCoords(passed);
-        setRemainingCoords(remaining);
-      } else {
-        const remaining = await getLine(trip.sourceCoords, trip.destCoords);
-        setRemainingCoords(remaining);
-      }
-    };
-    fetchRoute();
-  }, [trip.sourceCoords, trip.currentCoords, trip.destCoords]);
-
-  const pLine = passedCoords || (trip.currentCoords ? [trip.sourceCoords, trip.currentCoords] : null);
-  const rLine = remainingCoords || (trip.currentCoords ? [trip.currentCoords, trip.destCoords] : [trip.sourceCoords, trip.destCoords]);
-
-  return (
-    <div key={trip.id}>
-      {/* Remaining Route Line (Dashed) */}
-      <Polyline 
-        positions={rLine} 
-        color="var(--s-blue)" 
-        weight={2} 
-        opacity={0.4} 
-        dashArray="5, 7"
-      />
-      
-      {/* Passed Route Line (Solid) */}
-      {pLine && (
-        <Polyline 
-          positions={pLine} 
-          color="var(--s-blue)" 
-          weight={3} 
-          opacity={0.9} 
-        />
-      )}
-
-      {/* Source Dot (Hollow) */}
-      <CircleMarker 
-        center={trip.sourceCoords} 
-        radius={5} 
-        color="var(--s-blue)" 
-        weight={2} 
-        fillOpacity={0}
-      >
-        <Popup>{trip.source} (Source)</Popup>
-      </CircleMarker>
-
-      {/* Destination Dot (Solid) */}
-      <CircleMarker 
-        center={trip.destCoords} 
-        radius={5} 
-        stroke={false} 
-        fillColor="var(--s-blue)" 
-        fillOpacity={1}
-      >
-        <Popup>{trip.destination} (Destination)</Popup>
-      </CircleMarker>
-
-      {/* Current Position (Solid with white rim for contrast) */}
-      {trip.currentCoords && (
-        <CircleMarker 
-          center={trip.currentCoords} 
-          radius={6}
-          color="#ffffff"
-          weight={2}
-          fillColor="var(--s-blue)"
-          fillOpacity={1}
-        >
-          <Popup>
-            <strong>Trip #{trip.id}</strong><br/>
-            {trip.source} &rarr; {trip.destination}
-          </Popup>
-        </CircleMarker>
-      )}
-    </div>
-  );
-}
-
-function LiveTransitMap({ trips }) {
-  // Center roughly on central India
-  const center = [19.0, 78.0];
-  const activeTrips = trips.filter(t => t.status === 'dispatched' && t.sourceCoords && t.destCoords);
-
-  return (
-    <div className="card live-map-card">
-      <div className="card-header">
-        <div className="card-title">Live Transits</div>
-        <div className="card-subtitle">Active vehicles en route</div>
-      </div>
-      <div className="card-body" style={{ padding: 0, position: 'relative' }}>
-        <MapContainer center={center} zoom={5} style={{ height: 400, width: '100%', borderRadius: '0 0 var(--r-xl) var(--r-xl)' }} zoomControl={false}>
-          <TileLayer
-            url="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/512/{z}/{x}/{y}?access_token=YOUR_MAPBOX_TOKEN_HERE"
-            tileSize={512}
-            zoomOffset={-1}
-            attribution='Map data &copy; <a href="https://www.mapbox.com/">Mapbox</a>'
-          />
-          {activeTrips.map(trip => <LiveRoute key={trip.id} trip={trip} />)}
+              {/* Current Position (Solid with white rim for contrast) */}
+              {trip.currentCoords && (
+                <CircleMarker 
+                  center={trip.currentCoords} 
+                  radius={6}
+                  color="#ffffff"
+                  weight={2}
+                  fillColor="var(--s-blue)"
+                  fillOpacity={1}
+                >
+                  <Popup>
+                    <strong>Trip #{trip.id}</strong><br/>
+                    {trip.source} &rarr; {trip.destination}
+                  </Popup>
+                </CircleMarker>
+              )}
+            </div>
+          ))}
         </MapContainer>
         {/* Map overlay gradient for aesthetic blending */}
         <div className="map-overlay" />
@@ -543,7 +304,7 @@ function LiveTransitMap({ trips }) {
 }
 
 /* ─── DASHBOARD PAGE ─────────────────────────────────────────────────────── */
-function DashboardPage({ vehicles, drivers, trips, pageProps, setSelectedDriverId }) {
+function DashboardPage({ vehicles, drivers, trips }) {
   const totalVeh   = vehicles.length
   const available  = vehicles.filter(v => v.status === 'available').length
   const onTrip     = vehicles.filter(v => v.status === 'on_trip').length
@@ -1153,11 +914,234 @@ function DriversPage({ drivers, setDrivers, selectedDriverId, setSelectedDriverI
   )
 }
 
+/* ─── TRIPS PAGE ─────────────────────────────────────────────────────────── */
+function TripsPage({ trips, setTrips, vehicles, drivers }) {
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [showDispatch, setShowDispatch] = useState(false)
+  const [form, setForm] = useState({ vehicle_id:'', driver_id:'', source:'', destination:'', cargo_weight:'', planned_distance:'', revenue:'' })
+  const [error, setError] = useState('')
+
+  const filtered = useMemo(() =>
+    trips.filter(t =>
+      (!search || t.source.toLowerCase().includes(search.toLowerCase()) || t.destination.toLowerCase().includes(search.toLowerCase())) &&
+      (!statusFilter || t.status === statusFilter)
+    ), [trips, search, statusFilter])
+
+  const availVehicles = vehicles.filter(v => v.status === 'available')
+  const availDrivers  = drivers.filter(d => d.status === 'available')
+
+  const dispatchTrip = () => {
+    setError('')
+    const v = vehicles.find(x => x.id === Number(form.vehicle_id))
+    const d = drivers.find(x => x.id === Number(form.driver_id))
+    if (!v || !d || !form.source || !form.destination) { setError('Fill all required fields.'); return }
+    if (Number(form.cargo_weight) > v.max_load_capacity) { setError(`Cargo weight exceeds vehicle capacity of ${v.max_load_capacity} kg.`); return }
+
+    const newTrip = {
+      id: Date.now(), vehicle_id: Number(form.vehicle_id), driver_id: Number(form.driver_id),
+      source: form.source, destination: form.destination,
+      cargo_weight: Number(form.cargo_weight), planned_distance: Number(form.planned_distance),
+      revenue: Number(form.revenue), status: 'dispatched',
+      created_at: new Date().toISOString().slice(0, 10)
+    }
+    setTrips(prev => [newTrip, ...prev])
+    // Update vehicle & driver status
+    setShowDispatch(false)
+    setForm({ vehicle_id:'', driver_id:'', source:'', destination:'', cargo_weight:'', planned_distance:'', revenue:'' })
+  }
+
+  const completeTrip = id => setTrips(prev => prev.map(t => t.id === id ? { ...t, status: 'completed' } : t))
+  const cancelTrip   = id => setTrips(prev => prev.map(t => t.id === id ? { ...t, status: 'cancelled' } : t))
+
+  return (
+    <>
+      <div className="topbar">
+        <div className="topbar-left">
+          <h1>Trips</h1>
+          <p>{trips.filter(t => t.status === 'dispatched').length} active · {trips.filter(t => t.status === 'draft').length} pending</p>
+        </div>
+        <button className="btn btn-primary" id="dispatch-trip-btn" onClick={() => setShowDispatch(true)}>
+          <Icon d={Icons.dispatch} size={14} /> Dispatch Trip
+        </button>
+      </div>
+
+      <div className="page-section">
+        <div className="filters-bar" style={{ marginBottom: 16 }}>
+          <div className="search-wrap">
+            <span className="search-icon"><Icon d={Icons.search} size={13} /></span>
+            <input className="search-input" placeholder="Search by route…" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <select className="form-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+            <option value="">All statuses</option>
+            <option value="draft">Draft</option>
+            <option value="dispatched">Dispatched</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        <div className="card">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th><th>Route</th><th>Vehicle</th><th>Driver</th>
+                  <th>Cargo</th><th>Revenue</th><th>Date</th><th>Status</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={9}>
+                    <div className="empty-state">
+                      <div className="empty-icon"><Icon d={Icons.trip} size={28} /></div>
+                      <div className="empty-title">No trips found</div>
+                      <div className="empty-desc">Dispatch a new trip to get started</div>
+                    </div>
+                  </td></tr>
+                ) : filtered.map(t => {
+                  const v = vehicles.find(x => x.id === t.vehicle_id)
+                  const d = drivers.find(x => x.id === t.driver_id)
+                  return (
+                    <tr key={t.id}>
+                      <td className="td-muted">#{t.id.toString().slice(-4)}</td>
+                      <td>
+                        <div className="cell-main">{t.source} → {t.destination}</div>
+                        <div className="cell-sub">{t.planned_distance} km</div>
+                      </td>
+                      <td className="td-muted" style={{ fontSize:12 }}>{v?.registration_number || '—'}</td>
+                      <td>
+                        {d ? (
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            <div className="avatar">{initials(d.name)}</div>
+                            <span style={{ fontSize:13 }}>{d.name}</span>
+                          </div>
+                        ) : '—'}
+                      </td>
+                      <td className="td-muted">{t.cargo_weight} kg</td>
+                      <td>{t.revenue ? fmt(t.revenue) : '—'}</td>
+                      <td className="td-muted">{t.created_at}</td>
+                      <td><Badge status={t.status} /></td>
+                      <td>
+                        <div className="action-cell">
+                          {t.status === 'dispatched' && (
+                            <>
+                              <button className="btn btn-ghost btn-sm" id={`complete-${t.id}`} onClick={() => completeTrip(t.id)} title="Complete">
+                                <Icon d={Icons.complete} size={12} />
+                              </button>
+                              <button className="btn btn-danger btn-sm" id={`cancel-${t.id}`} onClick={() => cancelTrip(t.id)} title="Cancel">
+                                <Icon d={Icons.cancel} size={12} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {showDispatch && (
+        <Modal title="Dispatch Trip" onClose={() => { setShowDispatch(false); setError('') }}
+          footer={<>
+            <button className="btn btn-ghost" onClick={() => { setShowDispatch(false); setError('') }}>Cancel</button>
+            <button className="btn btn-primary" id="submit-dispatch-btn" onClick={dispatchTrip}>
+              <Icon d={Icons.dispatch} size={13} /> Dispatch
+            </button>
+          </>}>
+          {error && (
+            <div style={{ background:'var(--s-red-bg)', border:'1px solid rgba(248,113,113,0.2)', borderRadius:'var(--r-md)', padding:'10px 14px', color:'var(--s-red)', fontSize:13, marginBottom:16, display:'flex', gap:8 }}>
+              <Icon d={Icons.alert} size={14} />{error}
+            </div>
+          )}
+          <div className="form-grid">
+            <div className="form-group span-2">
+              <label>Vehicle <span style={{ color:'var(--s-green)', marginLeft:4 }}>({availVehicles.length} available)</span></label>
+              <select className="form-select-full" value={form.vehicle_id} onChange={e => setForm(f => ({...f, vehicle_id: e.target.value}))}>
+                <option value="">Select vehicle…</option>
+                {availVehicles.map(v => <option key={v.id} value={v.id}>{v.registration_number} — {v.name} ({v.max_load_capacity}kg cap.)</option>)}
+              </select>
+            </div>
+            <div className="form-group span-2">
+              <label>Driver <span style={{ color:'var(--s-green)', marginLeft:4 }}>({availDrivers.length} available)</span></label>
+              <select className="form-select-full" value={form.driver_id} onChange={e => setForm(f => ({...f, driver_id: e.target.value}))}>
+                <option value="">Select driver…</option>
+                {availDrivers.map(d => <option key={d.id} value={d.id}>{d.name} — Score: {d.safety_score}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Source</label>
+              <input className="form-input" placeholder="Origin city" value={form.source} onChange={e => setForm(f => ({...f, source: e.target.value}))} />
+            </div>
+            <div className="form-group">
+              <label>Destination</label>
+              <input className="form-input" placeholder="Destination city" value={form.destination} onChange={e => setForm(f => ({...f, destination: e.target.value}))} />
+            </div>
+            <div className="form-group">
+              <label>Cargo Weight (kg)</label>
+              <input className="form-input" type="number" placeholder="500" value={form.cargo_weight} onChange={e => setForm(f => ({...f, cargo_weight: e.target.value}))} />
+            </div>
+            <div className="form-group">
+              <label>Planned Distance (km)</label>
+              <input className="form-input" type="number" placeholder="350" value={form.planned_distance} onChange={e => setForm(f => ({...f, planned_distance: e.target.value}))} />
+            </div>
+            <div className="form-group span-2">
+              <label>Revenue (₹)</label>
+              <input className="form-input" type="number" placeholder="15000" value={form.revenue} onChange={e => setForm(f => ({...f, revenue: e.target.value}))} />
+            </div>
+          </div>
+        </Modal>
+      )}
+    </>
+  )
+}
+
+/* ─── PLACEHOLDER PAGES ──────────────────────────────────────────────────── */
+function PlaceholderPage({ title, icon, desc }) {
+  return (
+    <>
+      <div className="topbar">
+        <div className="topbar-left">
+          <h1>{title}</h1>
+          <p>{desc}</p>
+        </div>
+      </div>
+      <div className="page-section">
+        <div className="card">
+          <div className="empty-state" style={{ padding: 64 }}>
+            <div className="empty-icon"><Icon d={icon} size={40} /></div>
+            <div className="empty-title">{title} module</div>
+            <div className="empty-desc">This section will be implemented by the backend team and linked here.</div>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+/* ─── APP ROOT ───────────────────────────────────────────────────────────── */
+export default function App() {
+  const [view,     setView]     = useState('landing')
+  const [page,     setPage]     = useState('dashboard')
+  const [vehicles, setVehicles] = useState(VEHICLES_INIT)
+  const [drivers,  setDrivers]  = useState(DRIVERS_INIT)
+  const [trips,    setTrips]    = useState(TRIPS_INIT)
+  const [selectedDriverId, setSelectedDriverId] = useState(null)
+
+  // Show landing page first
+  if (view === 'landing') {
+    return <LandingPage onEnter={() => setView('app')} />
+  }
+
   const renderPage = () => {
     switch(page) {
-      case 'dashboard':   return <DashboardPage vehicles={vehicles} drivers={drivers} trips={trips} />
+      case 'dashboard':   return <DashboardPage vehicles={vehicles} drivers={drivers} trips={trips} setSelectedDriverId={setSelectedDriverId} setPage={setPage} />
       case 'vehicles':    return <VehiclesPage vehicles={vehicles} setVehicles={setVehicles} />
-      case 'drivers':     return <DriversPage drivers={drivers} setDrivers={setDrivers} />
+      case 'drivers':     return <DriversPage drivers={drivers} setDrivers={setDrivers} selectedDriverId={selectedDriverId} setSelectedDriverId={setSelectedDriverId} />
       case 'trips':       return <TripsPage trips={trips} setTrips={setTrips} vehicles={vehicles} drivers={drivers} />
       case 'fueling':     return <PlaceholderPage title="Fueling" icon={Icons.fuel} desc="Fuel logs and consumption tracking" />
       case 'maintenance': return <PlaceholderPage title="Maintenance" icon={Icons.wrench} desc="Scheduled and unscheduled maintenance records" />

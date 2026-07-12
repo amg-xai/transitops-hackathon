@@ -20,11 +20,11 @@ class Driver(models.Model):
     name                   = models.CharField(max_length=100)
     license_number         = models.CharField(max_length=50, unique=True)
     license_category       = models.CharField(max_length=20) # e.g. LMV (Light) or HMV (Heavy)
-    license_expiry         = models.DateField()
+    license_expiry         = models.DateField(db_index=True)
     contact_number         = models.CharField(max_length=20)
     email                  = models.EmailField(blank=True, help_text="Used for license expiry reminder emails.")
     safety_score           = models.DecimalField(max_digits=4, decimal_places=1, default=10.0) # Scale 0.0 - 10.0
-    status                 = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
+    status                 = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available', db_index=True)
     last_reminder_sent_at  = models.DateTimeField(null=True, blank=True) # Timestamp of last sent email reminder
     created_at             = models.DateTimeField(auto_now_add=True)
     updated_at             = models.DateTimeField(auto_now=True)
@@ -54,4 +54,4 @@ class Driver(models.Model):
         A driver is dispatchable only if they are marked 'available', 
         their license is not expired, and they are not suspended.
         """
-        return self.status == 'available' and not self.is_license_expired
+        return self.status == 'available' and not self.is_license_expired

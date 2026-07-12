@@ -30,8 +30,8 @@ class Vehicle(models.Model):
     max_load_capacity   = models.DecimalField(max_digits=10, decimal_places=2)  # Payload limit in kg
     odometer            = models.DecimalField(max_digits=10, decimal_places=2, default=0) # Total km traveled
     acquisition_cost    = models.DecimalField(max_digits=12, decimal_places=2) # Used to calculate fleet ROI
-    status              = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
-    region              = models.CharField(max_length=100, blank=True) # Fleet dispatch zone
+    status              = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available', db_index=True)
+    region              = models.CharField(max_length=100, blank=True, db_index=True)
     created_at          = models.DateTimeField(auto_now_add=True)
     updated_at          = models.DateTimeField(auto_now=True)
 
@@ -88,4 +88,4 @@ class VehicleDocument(models.Model):
         if not self.expiry_date or self.is_expired:
             return False
         from django.utils import timezone
-        return (self.expiry_date - timezone.now().date()).days <= 30
+        return (self.expiry_date - timezone.now().date()).days <= 30

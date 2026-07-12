@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    # local apps
+    'corsheaders',
     # local apps
     'core',
     'vehicles',
@@ -51,10 +51,12 @@ INSTALLED_APPS = [
     'maintenance',
     'fueling',
     'dashboard',
+    'api',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -147,8 +149,25 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Auth redirects
-
-# Auth redirects
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# CORS configuration (for React dev server)
+CORS_ALLOWED_ORIGINS = os.environ.get(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:5173,http://127.0.0.1:5173'
+).split(',')
+CORS_ALLOW_CREDENTIALS = True
+
+# Session cookie config for cross-origin API auth
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# For production: serve the React build
+STATICFILES_DIRS = [
+    BASE_DIR / 'folder_chrishna' / 'dist',
+] if (BASE_DIR / 'folder_chrishna' / 'dist').exists() else []
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

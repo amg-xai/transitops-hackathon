@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
-import { MapContainer, TileLayer, Marker, Polyline, Popup, CircleMarker } from 'react-leaflet'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { MapContainer, TileLayer, Polyline, Popup, CircleMarker } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import './index.css'
 import LandingPage from './LandingPage'
+import * as api from './api'
 
 /* Fix for default leaflet icons in React */
 delete L.Icon.Default.prototype._getIconUrl;
@@ -42,34 +43,6 @@ const Icons = {
   filter:    "M22 3H2l8 9.46V19l4 2v-8.54L22 3",
 }
 
-/* ─── SEED DATA ────────────────────────────────────────────────────────── */
-const VEHICLES_INIT = [
-  { id: 1, registration_number: 'KA-01-AB-1234', name: 'Tata Ace', vehicle_type: 'van',   status: 'available',  odometer: 12450, max_load_capacity: 750, region: 'Bangalore North', acquisition_cost: 850000 },
-  { id: 2, registration_number: 'KA-02-CD-5678', name: 'Ashok Leyland',vehicle_type:'truck', status: 'on_trip',   odometer: 84200, max_load_capacity: 8000,region: 'Bangalore South', acquisition_cost: 3200000 },
-  { id: 3, registration_number: 'KA-03-EF-9012', name: 'Force Traveller',vehicle_type:'bus', status: 'in_shop',  odometer: 56700, max_load_capacity: 2000,region: 'Mysuru', acquisition_cost: 1400000 },
-  { id: 4, registration_number: 'MH-12-GH-3456', name: 'Mahindra Bolero',vehicle_type:'car', status: 'available',odometer: 31200, max_load_capacity: 500, region: 'Pune', acquisition_cost: 950000 },
-  { id: 5, registration_number: 'DL-04-IJ-7890', name: 'Eicher 10.90',vehicle_type:'truck', status: 'available', odometer: 103400,max_load_capacity: 10000,region:'Delhi', acquisition_cost: 2800000 },
-  { id: 6, registration_number: 'TN-09-KL-2345', name: 'Bajaj RE',vehicle_type:'motorcycle',status:'retired',    odometer: 182000, max_load_capacity: 150,region:'Chennai', acquisition_cost: 180000 },
-]
-
-const DRIVERS_INIT = [
-  { id: 1, name: 'Ravi Kumar',    license_number: 'KA1420190001234', license_category: 'LMV',  license_expiry: '2027-08-15', contact_number: '9876543210', safety_score: 9.4, status: 'available' },
-  { id: 2, name: 'Suresh Babu',   license_number: 'KA1420210005678', license_category: 'HMV',  license_expiry: '2026-03-22', contact_number: '9876543211', safety_score: 8.1, status: 'on_trip'   },
-  { id: 3, name: 'Priya Sharma',  license_number: 'MH122022009012',  license_category: 'LMV',  license_expiry: '2025-11-10', contact_number: '9876543212', safety_score: 9.8, status: 'available' },
-  { id: 4, name: 'Anand Nair',    license_number: 'TN092021003456',  license_category: 'HMV',  license_expiry: '2028-01-05', contact_number: '9876543213', safety_score: 7.5, status: 'off_duty'  },
-  { id: 5, name: 'Deepak Singh',  license_number: 'DL042023007890',  license_category: 'HGMV', license_expiry: '2024-06-30', contact_number: '9876543214', safety_score: 6.2, status: 'suspended' },
-  { id: 6, name: 'Kavitha Reddy', license_number: 'AP052022001122',  license_category: 'LMV',  license_expiry: '2027-09-18', contact_number: '9876543215', safety_score: 9.1, status: 'available' },
-]
-
-const TRIPS_INIT = [
-  { id: 1, vehicle_id: 2, driver_id: 2, source: 'Bangalore', destination: 'Mumbai',   cargo_weight: 4500, planned_distance: 984,  revenue: 45000, status: 'dispatched',created_at: '2026-07-10', sourceCoords: [12.9716, 77.5946], destCoords: [19.0760, 72.8777], currentCoords: [15.3173, 75.7139] },
-  { id: 2, vehicle_id: 4, driver_id: 1, source: 'Pune',      destination: 'Hyderabad',cargo_weight: 300,  planned_distance: 560,  revenue: 12000, status: 'draft',    created_at: '2026-07-11', sourceCoords: [18.5204, 73.8567], destCoords: [17.3850, 78.4867] },
-  { id: 3, vehicle_id: 1, driver_id: 3, source: 'Bangalore', destination: 'Chennai',  cargo_weight: 600,  planned_distance: 346,  revenue: 18000, status: 'completed',created_at: '2026-07-08', sourceCoords: [12.9716, 77.5946], destCoords: [13.0827, 80.2707] },
-  { id: 4, vehicle_id: 5, driver_id: 6, source: 'Delhi',     destination: 'Jaipur',   cargo_weight: 9200, planned_distance: 270,  revenue: 38000, status: 'completed',created_at: '2026-07-07', sourceCoords: [28.7041, 77.1025], destCoords: [26.9124, 75.7873] },
-  { id: 5, vehicle_id: 1, driver_id: 1, source: 'Bangalore', destination: 'Mysuru',   cargo_weight: 700,  planned_distance: 144,  revenue: 8500,  status: 'cancelled',created_at: '2026-07-09', sourceCoords: [12.9716, 77.5946], destCoords: [12.2958, 76.6394] },
-  { id: 6, vehicle_id: 3, driver_id: 4, source: 'Hyderabad', destination: 'Vizag',    cargo_weight: 1500, planned_distance: 620,  revenue: 21000, status: 'dispatched',created_at: '2026-07-12', sourceCoords: [17.3850, 78.4867], destCoords: [17.6868, 83.2185], currentCoords: [17.5000, 80.5000] },
-]
-
 /* ─── HELPERS ──────────────────────────────────────────────────────────── */
 const Badge = ({ status }) => (
   <span className={`badge badge-${status}`}>{status.replace('_', ' ')}</span>
@@ -80,7 +53,7 @@ const ScoreBadge = ({ val }) => {
   return <span className={`score ${cls}`}>{val.toFixed(1)}</span>
 }
 
-const initials = name => name.split(' ').map(w => w[0]).join('').slice(0, 2)
+const initials = name => name ? name.split(' ').map(w => w[0]).join('').slice(0, 2) : '?'
 
 const fmt = n => n >= 1000000
   ? `₹${(n / 1000000).toFixed(1)}M`
@@ -104,8 +77,61 @@ function Modal({ title, onClose, children, footer }) {
   )
 }
 
+/* ─── LOGIN PAGE ────────────────────────────────────────────────────────── */
+function LoginPage({ onLogin }) {
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async e => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const user = await api.auth.login(username, password)
+      onLogin(user)
+    } catch {
+      setError('Invalid username or password')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-brand">
+          <div className="sidebar-brand-icon"><Icon d={Icons.truck} size={16} /></div>
+          <div>
+            <div className="sidebar-brand-name">TransitOps</div>
+            <div className="sidebar-brand-sub">Fleet Management</div>
+          </div>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Username</label>
+            <input className="form-input" value={username} onChange={e => setUsername(e.target.value)} placeholder="e.g. fleet1" autoFocus />
+          </div>
+          <div className="form-group">
+            <label>Password</label>
+            <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="demo1234" />
+          </div>
+          {error && <div style={{ color: 'var(--s-red)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
+            {loading ? 'Signing in…' : 'Sign In'}
+          </button>
+        </form>
+        <div style={{ marginTop: 20, fontSize: 11.5, color: 'var(--text-tertiary)', textAlign: 'center', lineHeight: 1.7 }}>
+          Demo: <strong>fleet1</strong> / <strong>demo1234</strong>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─── SIDEBAR ───────────────────────────────────────────────────────────── */
-function Sidebar({ page, setPage }) {
+function Sidebar({ page, setPage, user, onLogout }) {
   const nav = [
     { id: 'dashboard', label: 'Dashboard',  icon: Icons.dashboard },
     { id: 'vehicles',  label: 'Vehicles',   icon: Icons.truck },
@@ -141,15 +167,23 @@ function Sidebar({ page, setPage }) {
 
       <div className="sidebar-section-label">System</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <button className="nav-item" onClick={() => setPage('fueling')}>
+        <button className={`nav-item${page === 'fueling' ? ' active' : ''}`} onClick={() => setPage('fueling')}>
           <Icon d={Icons.fuel} size={15} />Fueling
         </button>
-        <button className="nav-item" onClick={() => setPage('maintenance')}>
+        <button className={`nav-item${page === 'maintenance' ? ' active' : ''}`} onClick={() => setPage('maintenance')}>
           <Icon d={Icons.wrench} size={15} />Maintenance
         </button>
       </div>
 
       <div className="sidebar-footer">
+        {user && (
+          <div style={{ padding: '8px 12px', fontSize: 12 }}>
+            <div style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>{user.username} <Badge status={user.role.replace('_', ' ').split(' ').pop()} /></div>
+            <button className="nav-item" onClick={onLogout} style={{ fontSize: 12, color: 'var(--s-red)', width: '100%' }}>
+              <Icon d={Icons.logout} size={14} />Sign Out
+            </button>
+          </div>
+        )}
         <div style={{ padding: '8px 0', fontSize: 11.5, color: 'var(--text-tertiary)', textAlign: 'center' }}>
           TransitOps · v1.0.0
         </div>
@@ -218,9 +252,8 @@ function BarChart({ data, color = 'var(--text-primary)' }) {
 
 /* ─── LIVE TRANSIT MAP ───────────────────────────────────────────────────── */
 function LiveTransitMap({ trips }) {
-  // Center roughly on central India
-  const center = [19.0, 78.0];
-  const activeTrips = trips.filter(t => t.status === 'dispatched' && t.sourceCoords && t.destCoords);
+  const center = [19.0, 78.0]
+  const activeTrips = trips.filter(t => t.status === 'dispatched')
 
   return (
     <div className="card live-map-card">
@@ -231,72 +264,15 @@ function LiveTransitMap({ trips }) {
       <div className="card-body" style={{ padding: 0, position: 'relative' }}>
         <MapContainer center={center} zoom={5} style={{ height: 400, width: '100%', borderRadius: '0 0 var(--r-xl) var(--r-xl)' }} zoomControl={false}>
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; CartoDB'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           />
           {activeTrips.map(trip => (
-            <div key={trip.id}>
-              {/* Remaining Route Line (Dashed) */}
-              <Polyline 
-                positions={trip.currentCoords ? [trip.currentCoords, trip.destCoords] : [trip.sourceCoords, trip.destCoords]} 
-                color="var(--s-blue)" 
-                weight={2} 
-                opacity={0.4} 
-                dashArray="5, 7"
-              />
-              
-              {/* Passed Route Line (Solid) */}
-              {trip.currentCoords && (
-                <Polyline 
-                  positions={[trip.sourceCoords, trip.currentCoords]} 
-                  color="var(--s-blue)" 
-                  weight={3} 
-                  opacity={0.9} 
-                />
-              )}
-
-              {/* Source Dot (Hollow) */}
-              <CircleMarker 
-                center={trip.sourceCoords} 
-                radius={5} 
-                color="var(--s-blue)" 
-                weight={2} 
-                fillOpacity={0}
-              >
-                <Popup>{trip.source} (Source)</Popup>
-              </CircleMarker>
-
-              {/* Destination Dot (Solid) */}
-              <CircleMarker 
-                center={trip.destCoords} 
-                radius={5} 
-                stroke={false} 
-                fillColor="var(--s-blue)" 
-                fillOpacity={1}
-              >
-                <Popup>{trip.destination} (Destination)</Popup>
-              </CircleMarker>
-
-              {/* Current Position (Solid with white rim for contrast) */}
-              {trip.currentCoords && (
-                <CircleMarker 
-                  center={trip.currentCoords} 
-                  radius={6}
-                  color="#ffffff"
-                  weight={2}
-                  fillColor="var(--s-blue)"
-                  fillOpacity={1}
-                >
-                  <Popup>
-                    <strong>Trip #{trip.id}</strong><br/>
-                    {trip.source} &rarr; {trip.destination}
-                  </Popup>
-                </CircleMarker>
-              )}
-            </div>
+            <CircleMarker key={trip.id} center={center} radius={6} color="var(--s-blue)" fillOpacity={0.8}>
+              <Popup><strong>Trip #{trip.id}</strong><br />{trip.source} → {trip.destination}</Popup>
+            </CircleMarker>
           ))}
         </MapContainer>
-        {/* Map overlay gradient for aesthetic blending */}
         <div className="map-overlay" />
       </div>
     </div>
@@ -304,23 +280,14 @@ function LiveTransitMap({ trips }) {
 }
 
 /* ─── DASHBOARD PAGE ─────────────────────────────────────────────────────── */
-function DashboardPage({ vehicles, drivers, trips }) {
-  const totalVeh   = vehicles.length
-  const available  = vehicles.filter(v => v.status === 'available').length
-  const onTrip     = vehicles.filter(v => v.status === 'on_trip').length
-  const inShop     = vehicles.filter(v => v.status === 'in_shop').length
-  const driversOn  = drivers.filter(d => d.status === 'on_trip').length
-  const activeTrips = trips.filter(t => t.status === 'dispatched').length
-  const revenue    = trips.filter(t => t.status === 'completed').reduce((s, t) => s + t.revenue, 0)
-  const utilPct    = totalVeh ? Math.round((onTrip / totalVeh) * 100) : 0
-
+function DashboardPage({ vehicles, drivers, trips, stats }) {
   const kpis = [
-    { label: 'Total Vehicles', value: totalVeh,   icon: Icons.truck,   footer: `${available} available` },
-    { label: 'Active Trips',   value: activeTrips,icon: Icons.trip,    footer: `${driversOn} drivers on duty`, footerClass: activeTrips > 0 ? 'up' : '' },
-    { label: 'Fleet Utilization', value: `${utilPct}%`, icon: Icons.dispatch, footer: `${onTrip} vehicles moving`, footerClass: utilPct > 60 ? 'up' : 'down' },
-    { label: 'Revenue (Completed)', value: fmt(revenue), icon: Icons.check, footer: `${trips.filter(t=>t.status==='completed').length} trips done`, footerClass: 'up' },
-    { label: 'In Maintenance', value: inShop,    icon: Icons.wrench,  footer: `${vehicles.filter(v=>v.status==='retired').length} retired` },
-    { label: 'Available Drivers', value: drivers.filter(d=>d.status==='available').length, icon: Icons.driver, footer: 'Ready to dispatch', footerClass: 'up' },
+    { label: 'Total Vehicles', value: stats.total_vehicles, icon: Icons.truck, footer: `${stats.available_vehicles} available` },
+    { label: 'Active Trips', value: stats.active_trips, icon: Icons.trip, footer: `${stats.drivers_on_duty} drivers on duty`, footerClass: stats.active_trips > 0 ? 'up' : '' },
+    { label: 'Fleet Utilization', value: `${stats.fleet_utilization}%`, icon: Icons.dispatch, footer: `${stats.on_trip_vehicles} vehicles moving`, footerClass: stats.fleet_utilization > 60 ? 'up' : 'down' },
+    { label: 'Revenue (Completed)', value: fmt(stats.revenue || 0), icon: Icons.check, footer: `${stats.completed_trips_count} trips done`, footerClass: 'up' },
+    { label: 'In Maintenance', value: stats.in_shop_vehicles, icon: Icons.wrench, footer: `${stats.retired_vehicles} retired` },
+    { label: 'Available Drivers', value: stats.available_drivers, icon: Icons.driver, footer: 'Ready to dispatch', footerClass: 'up' },
   ]
 
   const tripsByDay = [
@@ -331,13 +298,13 @@ function DashboardPage({ vehicles, drivers, trips }) {
   ]
 
   const fleetSegments = [
-    { label: 'Available', value: available, color: 'var(--s-green)' },
-    { label: 'On Trip',   value: onTrip,   color: 'var(--s-blue)' },
-    { label: 'In Shop',   value: inShop,   color: 'var(--s-amber)' },
-    { label: 'Retired',   value: vehicles.filter(v=>v.status==='retired').length, color: 'var(--s-gray)' },
+    { label: 'Available', value: stats.available_vehicles, color: 'var(--s-green)' },
+    { label: 'On Trip',   value: stats.on_trip_vehicles, color: 'var(--s-blue)' },
+    { label: 'In Shop',   value: stats.in_shop_vehicles, color: 'var(--s-amber)' },
+    { label: 'Retired',   value: stats.retired_vehicles, color: 'var(--s-gray)' },
   ]
 
-  const recentTrips = [...trips].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5)
+  const recentTrips = [...trips].slice(0, 5)
 
   return (
     <>
@@ -362,7 +329,6 @@ function DashboardPage({ vehicles, drivers, trips }) {
       </div>
 
       <div className="section-grid">
-        {/* Trips This Week */}
         <div className="card">
           <div className="card-header">
             <div>
@@ -375,7 +341,6 @@ function DashboardPage({ vehicles, drivers, trips }) {
           </div>
         </div>
 
-        {/* Fleet Status */}
         <div className="card">
           <div className="card-header">
             <div className="card-title">Fleet Status</div>
@@ -399,12 +364,10 @@ function DashboardPage({ vehicles, drivers, trips }) {
         </div>
       </div>
 
-      {/* Live Map Section */}
       <div className="page-section" style={{ marginTop: 24 }}>
         <LiveTransitMap trips={trips} />
       </div>
 
-      {/* Recent Trips */}
       <div className="page-section">
         <div className="card">
           <div className="card-header">
@@ -419,29 +382,27 @@ function DashboardPage({ vehicles, drivers, trips }) {
                 </tr>
               </thead>
               <tbody>
-                {recentTrips.map(t => {
-                  const v = VEHICLES_INIT.find(x => x.id === t.vehicle_id)
-                  const d = DRIVERS_INIT.find(x => x.id === t.driver_id)
-                  return (
-                    <tr key={t.id}>
-                      <td className="td-muted">#{t.id}</td>
-                      <td>
-                        <div className="cell-main">{t.source} → {t.destination}</div>
-                        <div className="cell-sub">{t.planned_distance} km</div>
-                      </td>
-                      <td className="td-muted">{v?.registration_number}</td>
-                      <td>
-                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                          <div className="avatar">{initials(d?.name || '?')}</div>
-                          {d?.name}
-                        </div>
-                      </td>
-                      <td className="td-muted">{t.cargo_weight} kg</td>
-                      <td>{fmt(t.revenue)}</td>
-                      <td><Badge status={t.status} /></td>
-                    </tr>
-                  )
-                })}
+                {recentTrips.length === 0 ? (
+                  <tr><td colSpan={7}><div className="empty-state"><div className="empty-title">No trips yet</div></div></td></tr>
+                ) : recentTrips.map(t => (
+                  <tr key={t.id}>
+                    <td className="td-muted">#{t.id}</td>
+                    <td>
+                      <div className="cell-main">{t.source} → {t.destination}</div>
+                      <div className="cell-sub">{t.planned_distance} km</div>
+                    </td>
+                    <td className="td-muted">{t.vehicle_reg}</td>
+                    <td>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <div className="avatar">{initials(t.driver_name)}</div>
+                        {t.driver_name}
+                      </div>
+                    </td>
+                    <td className="td-muted">{t.cargo_weight} kg</td>
+                    <td>{fmt(t.revenue)}</td>
+                    <td><Badge status={t.status} /></td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -452,11 +413,12 @@ function DashboardPage({ vehicles, drivers, trips }) {
 }
 
 /* ─── VEHICLES PAGE ──────────────────────────────────────────────────────── */
-function VehiclesPage({ vehicles, setVehicles }) {
+function VehiclesPage({ vehicles, refreshVehicles }) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ registration_number:'', name:'', vehicle_type:'van', max_load_capacity:'', acquisition_cost:'', region:'', status:'available', odometer:0 })
 
   const filtered = useMemo(() =>
@@ -466,11 +428,24 @@ function VehiclesPage({ vehicles, setVehicles }) {
       (!typeFilter   || v.vehicle_type === typeFilter)
     ), [vehicles, search, statusFilter, typeFilter])
 
-  const addVehicle = () => {
+  const addVehicle = async () => {
     if (!form.registration_number || !form.name) return
-    setVehicles(prev => [...prev, { ...form, id: Date.now(), max_load_capacity: Number(form.max_load_capacity), acquisition_cost: Number(form.acquisition_cost), odometer: Number(form.odometer), created_at: new Date().toISOString(), updated_at: new Date().toISOString() }])
-    setShowAdd(false)
-    setForm({ registration_number:'', name:'', vehicle_type:'van', max_load_capacity:'', acquisition_cost:'', region:'', status:'available', odometer:0 })
+    setSaving(true)
+    try {
+      await api.vehicles.create({
+        ...form,
+        max_load_capacity: Number(form.max_load_capacity) || 0,
+        acquisition_cost: Number(form.acquisition_cost) || 0,
+        odometer: Number(form.odometer) || 0,
+      })
+      setShowAdd(false)
+      setForm({ registration_number:'', name:'', vehicle_type:'van', max_load_capacity:'', acquisition_cost:'', region:'', status:'available', odometer:0 })
+      refreshVehicles()
+    } catch (e) {
+      alert(e.error || 'Failed to add vehicle')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -550,7 +525,7 @@ function VehiclesPage({ vehicles, setVehicles }) {
         <Modal title="Add Vehicle" onClose={() => setShowAdd(false)}
           footer={<>
             <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Cancel</button>
-            <button className="btn btn-primary" id="submit-vehicle-btn" onClick={addVehicle}>Add Vehicle</button>
+            <button className="btn btn-primary" id="submit-vehicle-btn" onClick={addVehicle} disabled={saving}>{saving ? 'Saving…' : 'Add Vehicle'}</button>
           </>}>
           <div className="form-grid">
             <div className="form-group">
@@ -591,10 +566,12 @@ function VehiclesPage({ vehicles, setVehicles }) {
 }
 
 /* ─── DRIVERS PAGE ───────────────────────────────────────────────────────── */
-function DriversPage({ drivers, setDrivers, selectedDriverId, setSelectedDriverId }) {
+function DriversPage({ drivers, refreshDrivers }) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [selectedDriverId, setSelectedDriverId] = useState(null)
   const [form, setForm] = useState({ name:'', license_number:'', license_category:'LMV', license_expiry:'', contact_number:'', safety_score:'10.0', status:'available' })
 
   const filtered = useMemo(() =>
@@ -603,47 +580,48 @@ function DriversPage({ drivers, setDrivers, selectedDriverId, setSelectedDriverI
       (!statusFilter || d.status === statusFilter)
     ), [drivers, search, statusFilter])
 
-  const addDriver = () => {
-    if (!form.name || !form.license_number) return
-    const newId = Date.now()
-    setDrivers(prev => [...prev, { ...form, id: newId, safety_score: parseFloat(form.safety_score) }])
-    setShowAdd(false)
-    setForm({ name:'', license_number:'', license_category:'LMV', license_expiry:'', contact_number:'', safety_score:'10.0', status:'available' })
+  const addDriver = async () => {
+    if (!form.name || !form.license_number || !form.license_expiry) return
+    setSaving(true)
+    try {
+      await api.drivers.create(form)
+      setShowAdd(false)
+      setForm({ name:'', license_number:'', license_category:'LMV', license_expiry:'', contact_number:'', safety_score:'10.0', status:'available' })
+      refreshDrivers()
+    } catch (e) {
+      alert(e.error || 'Failed to add driver')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const activeDriver = drivers.find(d => d.id === selectedDriverId)
-  
-  // Mock safety data based on safety_score
+
   const getSafetyData = (d) => {
     if (!d) return null
     const s = d.safety_score
     const speed = Math.min(100, Math.round(s * 10))
     const brake = Math.max(30, Math.round((s - 2) * 12))
     const idle = Math.max(2, Math.round(20 - s * 1.5)) + '%'
-    let warnings = []
-    let achievements = []
+    let warnings = [], achievements = []
     if (s >= 9.0) achievements = ['Eco-Driver of the Month', '10,000+ Safe Kilometers']
     else if (s >= 7.0) achievements = ['On-Time Champion']
-    
     if (s < 8.0 && s >= 6.0) warnings = ['Frequent hard braking incidents']
     if (s < 6.0) warnings = ['Multiple speeding alerts', 'License validity check required']
-
     return { speedScore: speed, brakingScore: brake, idleTime: idle, warnings, achievements }
   }
 
-  const currentStats = getSafetyData(activeDriver)
-
-  const heatmapWeeks = useMemo(() => Array.from({ length: 24 }, () => 
+  const heatmapWeeks = useMemo(() => Array.from({ length: 24 }, () =>
     Array.from({ length: 7 }, () => Math.floor(Math.random() * ((activeDriver?.safety_score || 10) > 7 ? 4 : 2)))
   ), [activeDriver?.id])
 
-  // Simple SVG icons
   const ShieldCheckIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
   const ShieldAlertIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginTop:'2px',flexShrink:0}}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
   const AwardIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
 
-  const days = ['Mon', 'Wed', 'Fri'];
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+  const currentStats = getSafetyData(activeDriver)
+  const days = ['Mon', 'Wed', 'Fri']
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
 
   return (
     <>
@@ -654,9 +632,7 @@ function DriversPage({ drivers, setDrivers, selectedDriverId, setSelectedDriverI
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           {selectedDriverId && (
-            <button className="btn btn-ghost" onClick={() => setSelectedDriverId(null)}>
-              ← Back to all drivers
-            </button>
+            <button className="btn btn-ghost" onClick={() => setSelectedDriverId(null)}>← Back to all drivers</button>
           )}
           <button className="btn btn-primary" id="add-driver-btn" onClick={() => setShowAdd(true)}>
             <Icon d={Icons.plus} size={14} /> Add Driver
@@ -698,58 +674,43 @@ function DriversPage({ drivers, setDrivers, selectedDriverId, setSelectedDriverI
                         <div className="empty-desc">Try adjusting your search</div>
                       </div>
                     </td></tr>
-                  ) : filtered.map(d => {
-                    const expired = new Date(d.license_expiry) < new Date()
-                    return (
-                      <tr key={d.id} onClick={() => setSelectedDriverId(d.id)} style={{ cursor: 'pointer' }}>
-                        <td>
-                          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                            <div className="avatar">{initials(d.name)}</div>
-                            <div className="cell-main">{d.name}</div>
-                          </div>
-                        </td>
-                        <td className="td-muted" style={{ fontFamily:'monospace', fontSize:12 }}>{d.license_number}</td>
-                        <td className="td-muted">{d.license_category}</td>
-                        <td>
-                          <span style={{ color: expired ? 'var(--s-red)' : 'var(--text-secondary)', fontSize:12 }}>
-                            {d.license_expiry}
-                            {expired && ' ⚠'}
-                          </span>
-                        </td>
-                        <td className="td-muted">{d.contact_number}</td>
-                        <td><ScoreBadge val={d.safety_score} /></td>
-                        <td><Badge status={d.status} /></td>
-                      </tr>
-                    )
-                  })}
+                  ) : filtered.map(d => (
+                    <tr key={d.id} onClick={() => setSelectedDriverId(d.id)} style={{ cursor: 'pointer' }}>
+                      <td>
+                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                          <div className="avatar">{initials(d.name)}</div>
+                          <div className="cell-main">{d.name}</div>
+                        </div>
+                      </td>
+                      <td className="td-muted" style={{ fontFamily:'monospace', fontSize:12 }}>{d.license_number}</td>
+                      <td className="td-muted">{d.license_category}</td>
+                      <td>
+                        <span style={{ color: d.is_license_expired ? 'var(--s-red)' : 'var(--text-secondary)', fontSize:12 }}>
+                          {d.license_expiry}
+                          {d.is_license_expired && ' ⚠'}
+                        </span>
+                      </td>
+                      <td className="td-muted">{d.contact_number}</td>
+                      <td><ScoreBadge val={d.safety_score} /></td>
+                      <td><Badge status={d.status} /></td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
         </div>
-      ) : (
+      ) : activeDriver && (
         <div className="page-section section-grid" style={{ gridTemplateColumns: '300px 1fr' }}>
           <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
             <div className="sidebar-section-label" style={{ padding: '0 0 16px 0', fontSize: '11px', letterSpacing: '1px' }}>Active Operators</div>
-            <div className="search-wrap" style={{ marginBottom: 16, minWidth: '100%' }}>
-              <span className="search-icon"><Icon d={Icons.search} size={13} /></span>
-              <input className="search-input" placeholder="Search drivers…" value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', flex: 1, paddingRight: 4, maxHeight: '600px' }}>
-              {filtered.length === 0 ? (
-                <div className="empty-state" style={{ padding: '30px 20px', border: '1px dashed var(--bg-border)', borderRadius: 'var(--r-md)' }}>
-                  <div className="empty-icon" style={{ opacity: 0.5 }}><Icon d={Icons.driver} size={24} /></div>
-                  <div className="empty-title" style={{ fontSize: 13, marginTop: '8px' }}>No drivers found</div>
-                </div>
-              ) : filtered.map((driver) => {
-                 const tripsCount = Math.round(driver.safety_score * 12);
-                 const rating = driver.safety_score >= 9.0 ? 'Excellent' : driver.safety_score >= 7.0 ? 'Good' : 'Warning'
-                 return (
-                  <button
-                    key={driver.id}
-                    onClick={() => setSelectedDriverId(driver.id)}
-                    className={`driver-select-btn ${selectedDriverId === driver.id ? 'active' : ''}`}
-                  >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', flex: 1, maxHeight: '600px' }}>
+              {filtered.map(driver => {
+                const tripsCount = Math.round(driver.safety_score * 12)
+                const rating = driver.safety_score >= 9.0 ? 'Excellent' : driver.safety_score >= 7.0 ? 'Good' : 'Warning'
+                return (
+                  <button key={driver.id} onClick={() => setSelectedDriverId(driver.id)}
+                    className={`driver-select-btn ${selectedDriverId === driver.id ? 'active' : ''}`}>
                     <div>
                       <div className="cell-main" style={{ fontSize: '14px' }}>{driver.name}</div>
                       <div className="cell-sub" style={{ marginTop: '2px' }}>Trips: {tripsCount}</div>
@@ -758,7 +719,6 @@ function DriversPage({ drivers, setDrivers, selectedDriverId, setSelectedDriverI
                       <div style={{ fontSize: '14px', color: driver.safety_score >= 8.5 ? 'var(--s-green)' : driver.safety_score >= 7.0 ? 'var(--s-amber)' : 'var(--s-red)', fontWeight: 'bold' }}>
                         {driver.safety_score.toFixed(1)}<span style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 'normal' }}>/10</span>
                       </div>
-                      <div className="cell-sub" style={{ textTransform: 'uppercase', fontSize: '9px', marginTop: '4px', letterSpacing: '0.5px' }}>{rating}</div>
                     </div>
                   </button>
                 )
@@ -768,73 +728,39 @@ function DriversPage({ drivers, setDrivers, selectedDriverId, setSelectedDriverI
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div className="card" style={{ padding: '28px', display: 'flex', gap: '24px', alignItems: 'center' }}>
-              <div className="avatar-large" style={{ fontSize: '28px', boxShadow: '0 0 20px rgba(232, 224, 212, 0.05)' }}>{initials(activeDriver.name)}</div>
+              <div className="avatar-large" style={{ fontSize: '28px' }}>{initials(activeDriver.name)}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                   <h3 style={{ fontSize: '22px', fontWeight: 'bold', letterSpacing: '-0.5px' }}>{activeDriver.name}</h3>
-                  <span className={`badge ${activeDriver.safety_score >= 8.5 ? 'badge-completed' : activeDriver.safety_score >= 7.0 ? 'badge-in_shop' : 'badge-suspended'}`} style={{ padding: '6px 12px', fontSize: '11px', letterSpacing: '0.5px' }}>
-                    {activeDriver.safety_score >= 8.5 ? 'Excellent' : activeDriver.safety_score >= 7.0 ? 'Good' : 'Warning'} Rating
-                  </span>
+                  <Badge status={activeDriver.status} />
                 </div>
                 <div className="stat-row">
-                  <div className="stat-box">
-                    <div className="stat-box-lbl">Speed Control</div>
-                    <div className="stat-box-val">{currentStats.speedScore}%</div>
-                  </div>
-                  <div className="stat-box">
-                    <div className="stat-box-lbl">Smooth Braking</div>
-                    <div className="stat-box-val">{currentStats.brakingScore}%</div>
-                  </div>
-                  <div className="stat-box">
-                    <div className="stat-box-lbl">Engine Idling</div>
-                    <div className="stat-box-val">{currentStats.idleTime}</div>
-                  </div>
-                  <div className="stat-box">
-                    <div className="stat-box-lbl">License Expiration</div>
-                    <div className="stat-box-val" style={{ fontSize: '15px', marginTop: '4px', color: (new Date(activeDriver.license_expiry) < new Date() || activeDriver.status === 'suspended') ? 'var(--s-red)' : 'var(--text-primary)' }}>
-                      {activeDriver.license_expiry}
-                    </div>
-                  </div>
+                  <div className="stat-box"><div className="stat-box-lbl">Speed Control</div><div className="stat-box-val">{currentStats.speedScore}%</div></div>
+                  <div className="stat-box"><div className="stat-box-lbl">Smooth Braking</div><div className="stat-box-val">{currentStats.brakingScore}%</div></div>
+                  <div className="stat-box"><div className="stat-box-lbl">Engine Idling</div><div className="stat-box-val">{currentStats.idleTime}</div></div>
+                  <div className="stat-box"><div className="stat-box-lbl">License Expiry</div><div className="stat-box-val" style={{ fontSize: '15px', color: activeDriver.is_license_expired ? 'var(--s-red)' : 'var(--text-primary)' }}>{activeDriver.license_expiry}</div></div>
                 </div>
               </div>
             </div>
 
             <div className="card" style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <div className="sidebar-section-label" style={{ padding: 0, fontSize: '11px', letterSpacing: '1px' }}>Weekly Duty Heatmap</div>
-              </div>
-              
+              <div className="sidebar-section-label" style={{ padding: '0 0 16px 0', fontSize: '11px', letterSpacing: '1px' }}>Weekly Duty Heatmap</div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingTop: '16px', paddingBottom: '12px', fontSize: '10px', color: 'var(--text-tertiary)' }}>
                   {days.map((day, i) => <span key={i}>{day}</span>)}
                 </div>
                 <div style={{ flex: 1, overflowX: 'auto', paddingBottom: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '10px', color: 'var(--text-tertiary)', paddingRight: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '10px', color: 'var(--text-tertiary)' }}>
                     {months.map((month, i) => <span key={i}>{month}</span>)}
                   </div>
-                  <div className="heatmap-container" style={{ paddingBottom: '0' }}>
+                  <div className="heatmap-container">
                     {heatmapWeeks.map((week, wIdx) => (
                       <div key={wIdx} className="heatmap-col">
-                        {week.map((cell, cIdx) => (
-                          <div 
-                            key={cIdx} 
-                            className={`heatmap-cell cell-val-${cell}`} 
-                            title={`Week ${wIdx + 1}, Day ${cIdx + 1}: ${cell === 0 ? 'Off Duty' : cell === 1 ? 'Low Activity' : cell === 2 ? 'Moderate Activity' : 'High Activity'}`} 
-                          />
-                        ))}
+                        {week.map((cell, cIdx) => (<div key={cIdx} className={`heatmap-cell cell-val-${cell}`} />))}
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
-
-              <div className="heatmap-legend" style={{ marginTop: '4px' }}>
-                <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Off Duty</span>
-                <div className="heatmap-cell cell-val-0" style={{ width: '12px', height: '12px' }} />
-                <div className="heatmap-cell cell-val-1" style={{ width: '12px', height: '12px' }} />
-                <div className="heatmap-cell cell-val-2" style={{ width: '12px', height: '12px' }} />
-                <div className="heatmap-cell cell-val-3" style={{ width: '12px', height: '12px' }} />
-                <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>High Activity</span>
               </div>
             </div>
 
@@ -849,14 +775,12 @@ function DriversPage({ drivers, setDrivers, selectedDriverId, setSelectedDriverI
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {currentStats.warnings.map((warn, i) => (
                       <div key={i} className="alert-box danger" style={{ padding: '14px', borderRadius: '8px' }}>
-                        <ShieldAlertIcon />
-                        <span style={{ fontSize: '13px' }}>{warn}</span>
+                        <ShieldAlertIcon /><span style={{ fontSize: '13px' }}>{warn}</span>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-
               <div className="card" style={{ padding: '24px' }}>
                 <div className="sidebar-section-label" style={{ padding: '0 0 16px 0', fontSize: '11px', letterSpacing: '1px' }}>Achievements</div>
                 {currentStats.achievements.length === 0 ? (
@@ -865,8 +789,7 @@ function DriversPage({ drivers, setDrivers, selectedDriverId, setSelectedDriverI
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {currentStats.achievements.map((ach, i) => (
                       <div key={i} className="alert-box success" style={{ padding: '14px', borderRadius: '8px' }}>
-                        <AwardIcon />
-                        <span style={{ fontSize: '13px', fontWeight: '500' }}>{ach}</span>
+                        <AwardIcon /><span style={{ fontSize: '13px', fontWeight: '500' }}>{ach}</span>
                       </div>
                     ))}
                   </div>
@@ -881,7 +804,7 @@ function DriversPage({ drivers, setDrivers, selectedDriverId, setSelectedDriverI
         <Modal title="Add Driver" onClose={() => setShowAdd(false)}
           footer={<>
             <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Cancel</button>
-            <button className="btn btn-primary" id="submit-driver-btn" onClick={addDriver}>Add Driver</button>
+            <button className="btn btn-primary" id="submit-driver-btn" onClick={addDriver} disabled={saving}>{saving ? 'Saving…' : 'Add Driver'}</button>
           </>}>
           <div className="form-grid">
             <div className="form-group span-2">
@@ -915,54 +838,81 @@ function DriversPage({ drivers, setDrivers, selectedDriverId, setSelectedDriverI
 }
 
 /* ─── TRIPS PAGE ─────────────────────────────────────────────────────────── */
-function TripsPage({ trips, setTrips, vehicles, drivers }) {
+function TripsPage({ trips, refreshTrips, vehicles, drivers }) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [showDispatch, setShowDispatch] = useState(false)
+  const [showAdd, setShowAdd] = useState(false)
+  const [showComplete, setShowComplete] = useState(null)
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ vehicle_id:'', driver_id:'', source:'', destination:'', cargo_weight:'', planned_distance:'', revenue:'' })
-  const [error, setError] = useState('')
+  const [completeForm, setCompleteForm] = useState({ final_odometer:'', fuel_consumed:'', actual_distance:'', revenue:'' })
 
   const filtered = useMemo(() =>
     trips.filter(t =>
-      (!search || t.source.toLowerCase().includes(search.toLowerCase()) || t.destination.toLowerCase().includes(search.toLowerCase())) &&
+      (!search || t.source.toLowerCase().includes(search.toLowerCase()) || t.destination.toLowerCase().includes(search.toLowerCase()) || t.vehicle_reg?.toLowerCase().includes(search.toLowerCase())) &&
       (!statusFilter || t.status === statusFilter)
     ), [trips, search, statusFilter])
 
-  const availVehicles = vehicles.filter(v => v.status === 'available')
-  const availDrivers  = drivers.filter(d => d.status === 'available')
-
-  const dispatchTrip = () => {
-    setError('')
-    const v = vehicles.find(x => x.id === Number(form.vehicle_id))
-    const d = drivers.find(x => x.id === Number(form.driver_id))
-    if (!v || !d || !form.source || !form.destination) { setError('Fill all required fields.'); return }
-    if (Number(form.cargo_weight) > v.max_load_capacity) { setError(`Cargo weight exceeds vehicle capacity of ${v.max_load_capacity} kg.`); return }
-
-    const newTrip = {
-      id: Date.now(), vehicle_id: Number(form.vehicle_id), driver_id: Number(form.driver_id),
-      source: form.source, destination: form.destination,
-      cargo_weight: Number(form.cargo_weight), planned_distance: Number(form.planned_distance),
-      revenue: Number(form.revenue), status: 'dispatched',
-      created_at: new Date().toISOString().slice(0, 10)
+  const createTrip = async () => {
+    if (!form.vehicle_id || !form.driver_id || !form.source || !form.destination) return
+    setSaving(true)
+    try {
+      await api.trips.create({
+        ...form,
+        cargo_weight: Number(form.cargo_weight) || 0,
+        planned_distance: Number(form.planned_distance) || 0,
+        revenue: Number(form.revenue) || 0,
+      })
+      setShowAdd(false)
+      setForm({ vehicle_id:'', driver_id:'', source:'', destination:'', cargo_weight:'', planned_distance:'', revenue:'' })
+      refreshTrips()
+    } catch (e) {
+      alert(e.error || 'Failed to create trip')
+    } finally {
+      setSaving(false)
     }
-    setTrips(prev => [newTrip, ...prev])
-    // Update vehicle & driver status
-    setShowDispatch(false)
-    setForm({ vehicle_id:'', driver_id:'', source:'', destination:'', cargo_weight:'', planned_distance:'', revenue:'' })
   }
 
-  const completeTrip = id => setTrips(prev => prev.map(t => t.id === id ? { ...t, status: 'completed' } : t))
-  const cancelTrip   = id => setTrips(prev => prev.map(t => t.id === id ? { ...t, status: 'cancelled' } : t))
+  const dispatchTrip = async (id) => {
+    try { await api.trips.dispatch(id); refreshTrips() }
+    catch (e) { alert(e.error || 'Dispatch failed') }
+  }
+  const cancelTrip = async (id) => {
+    try { await api.trips.cancel(id); refreshTrips() }
+    catch (e) { alert(e.error || 'Cancel failed') }
+  }
+  const completeTrip = async () => {
+    if (!showComplete) return
+    setSaving(true)
+    try {
+      await api.trips.complete(showComplete, {
+        final_odometer: Number(completeForm.final_odometer) || 0,
+        fuel_consumed: Number(completeForm.fuel_consumed) || 0,
+        actual_distance: Number(completeForm.actual_distance) || 0,
+        revenue: Number(completeForm.revenue) || 0,
+      })
+      setShowComplete(null)
+      setCompleteForm({ final_odometer:'', fuel_consumed:'', actual_distance:'', revenue:'' })
+      refreshTrips()
+    } catch (e) {
+      alert(e.error || 'Complete failed')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const availableVehicles = vehicles.filter(v => v.status === 'available')
+  const availableDrivers = drivers.filter(d => d.status === 'available' && !d.is_license_expired)
 
   return (
     <>
       <div className="topbar">
         <div className="topbar-left">
           <h1>Trips</h1>
-          <p>{trips.filter(t => t.status === 'dispatched').length} active · {trips.filter(t => t.status === 'draft').length} pending</p>
+          <p>{trips.length} trips in the system</p>
         </div>
-        <button className="btn btn-primary" id="dispatch-trip-btn" onClick={() => setShowDispatch(true)}>
-          <Icon d={Icons.dispatch} size={14} /> Dispatch Trip
+        <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
+          <Icon d={Icons.plus} size={14} /> Create Trip
         </button>
       </div>
 
@@ -970,7 +920,7 @@ function TripsPage({ trips, setTrips, vehicles, drivers }) {
         <div className="filters-bar" style={{ marginBottom: 16 }}>
           <div className="search-wrap">
             <span className="search-icon"><Icon d={Icons.search} size={13} /></span>
-            <input className="search-input" placeholder="Search by route…" value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="search-input" placeholder="Search trips…" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <select className="form-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
             <option value="">All statuses</option>
@@ -987,7 +937,7 @@ function TripsPage({ trips, setTrips, vehicles, drivers }) {
               <thead>
                 <tr>
                   <th>#</th><th>Route</th><th>Vehicle</th><th>Driver</th>
-                  <th>Cargo</th><th>Revenue</th><th>Date</th><th>Status</th><th>Actions</th>
+                  <th>Weight</th><th>Distance</th><th>Revenue</th><th>Status</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -996,102 +946,120 @@ function TripsPage({ trips, setTrips, vehicles, drivers }) {
                     <div className="empty-state">
                       <div className="empty-icon"><Icon d={Icons.trip} size={28} /></div>
                       <div className="empty-title">No trips found</div>
-                      <div className="empty-desc">Dispatch a new trip to get started</div>
                     </div>
                   </td></tr>
-                ) : filtered.map(t => {
-                  const v = vehicles.find(x => x.id === t.vehicle_id)
-                  const d = drivers.find(x => x.id === t.driver_id)
-                  return (
-                    <tr key={t.id}>
-                      <td className="td-muted">#{t.id.toString().slice(-4)}</td>
-                      <td>
-                        <div className="cell-main">{t.source} → {t.destination}</div>
-                        <div className="cell-sub">{t.planned_distance} km</div>
-                      </td>
-                      <td className="td-muted" style={{ fontSize:12 }}>{v?.registration_number || '—'}</td>
-                      <td>
-                        {d ? (
-                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                            <div className="avatar">{initials(d.name)}</div>
-                            <span style={{ fontSize:13 }}>{d.name}</span>
-                          </div>
-                        ) : '—'}
-                      </td>
-                      <td className="td-muted">{t.cargo_weight} kg</td>
-                      <td>{t.revenue ? fmt(t.revenue) : '—'}</td>
-                      <td className="td-muted">{t.created_at}</td>
-                      <td><Badge status={t.status} /></td>
-                      <td>
-                        <div className="action-cell">
-                          {t.status === 'dispatched' && (
-                            <>
-                              <button className="btn btn-ghost btn-sm" id={`complete-${t.id}`} onClick={() => completeTrip(t.id)} title="Complete">
-                                <Icon d={Icons.complete} size={12} />
-                              </button>
-                              <button className="btn btn-danger btn-sm" id={`cancel-${t.id}`} onClick={() => cancelTrip(t.id)} title="Cancel">
-                                <Icon d={Icons.cancel} size={12} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
+                ) : filtered.map(t => (
+                  <tr key={t.id}>
+                    <td className="td-muted">#{t.id}</td>
+                    <td>
+                      <div className="cell-main">{t.source} → {t.destination}</div>
+                    </td>
+                    <td className="td-muted">{t.vehicle_reg}</td>
+                    <td>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <div className="avatar">{initials(t.driver_name)}</div>
+                        {t.driver_name}
+                      </div>
+                    </td>
+                    <td className="td-muted">{t.cargo_weight} kg</td>
+                    <td className="td-muted">{t.planned_distance} km</td>
+                    <td>{fmt(t.revenue)}</td>
+                    <td><Badge status={t.status} /></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {t.status === 'draft' && (
+                          <>
+                            <button className="btn btn-primary" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => dispatchTrip(t.id)}>
+                              <Icon d={Icons.dispatch} size={12} /> Dispatch
+                            </button>
+                            <button className="btn btn-ghost" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => cancelTrip(t.id)}>Cancel</button>
+                          </>
+                        )}
+                        {t.status === 'dispatched' && (
+                          <>
+                            <button className="btn btn-primary" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => setShowComplete(t.id)}>
+                              <Icon d={Icons.complete} size={12} /> Complete
+                            </button>
+                            <button className="btn btn-ghost" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => cancelTrip(t.id)}>Cancel</button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      {showDispatch && (
-        <Modal title="Dispatch Trip" onClose={() => { setShowDispatch(false); setError('') }}
+      {showAdd && (
+        <Modal title="Create Trip" onClose={() => setShowAdd(false)}
           footer={<>
-            <button className="btn btn-ghost" onClick={() => { setShowDispatch(false); setError('') }}>Cancel</button>
-            <button className="btn btn-primary" id="submit-dispatch-btn" onClick={dispatchTrip}>
-              <Icon d={Icons.dispatch} size={13} /> Dispatch
-            </button>
+            <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={createTrip} disabled={saving}>{saving ? 'Creating…' : 'Create Trip'}</button>
           </>}>
-          {error && (
-            <div style={{ background:'var(--s-red-bg)', border:'1px solid rgba(248,113,113,0.2)', borderRadius:'var(--r-md)', padding:'10px 14px', color:'var(--s-red)', fontSize:13, marginBottom:16, display:'flex', gap:8 }}>
-              <Icon d={Icons.alert} size={14} />{error}
-            </div>
-          )}
           <div className="form-grid">
-            <div className="form-group span-2">
-              <label>Vehicle <span style={{ color:'var(--s-green)', marginLeft:4 }}>({availVehicles.length} available)</span></label>
+            <div className="form-group">
+              <label>Vehicle</label>
               <select className="form-select-full" value={form.vehicle_id} onChange={e => setForm(f => ({...f, vehicle_id: e.target.value}))}>
                 <option value="">Select vehicle…</option>
-                {availVehicles.map(v => <option key={v.id} value={v.id}>{v.registration_number} — {v.name} ({v.max_load_capacity}kg cap.)</option>)}
+                {availableVehicles.map(v => <option key={v.id} value={v.id}>{v.name} ({v.registration_number})</option>)}
               </select>
             </div>
-            <div className="form-group span-2">
-              <label>Driver <span style={{ color:'var(--s-green)', marginLeft:4 }}>({availDrivers.length} available)</span></label>
+            <div className="form-group">
+              <label>Driver</label>
               <select className="form-select-full" value={form.driver_id} onChange={e => setForm(f => ({...f, driver_id: e.target.value}))}>
                 <option value="">Select driver…</option>
-                {availDrivers.map(d => <option key={d.id} value={d.id}>{d.name} — Score: {d.safety_score}</option>)}
+                {availableDrivers.map(d => <option key={d.id} value={d.id}>{d.name} ({d.license_category})</option>)}
               </select>
             </div>
             <div className="form-group">
               <label>Source</label>
-              <input className="form-input" placeholder="Origin city" value={form.source} onChange={e => setForm(f => ({...f, source: e.target.value}))} />
+              <input className="form-input" placeholder="e.g. Bangalore" value={form.source} onChange={e => setForm(f => ({...f, source: e.target.value}))} />
             </div>
             <div className="form-group">
               <label>Destination</label>
-              <input className="form-input" placeholder="Destination city" value={form.destination} onChange={e => setForm(f => ({...f, destination: e.target.value}))} />
+              <input className="form-input" placeholder="e.g. Mumbai" value={form.destination} onChange={e => setForm(f => ({...f, destination: e.target.value}))} />
             </div>
             <div className="form-group">
               <label>Cargo Weight (kg)</label>
-              <input className="form-input" type="number" placeholder="500" value={form.cargo_weight} onChange={e => setForm(f => ({...f, cargo_weight: e.target.value}))} />
+              <input className="form-input" type="number" value={form.cargo_weight} onChange={e => setForm(f => ({...f, cargo_weight: e.target.value}))} />
             </div>
             <div className="form-group">
               <label>Planned Distance (km)</label>
-              <input className="form-input" type="number" placeholder="350" value={form.planned_distance} onChange={e => setForm(f => ({...f, planned_distance: e.target.value}))} />
+              <input className="form-input" type="number" value={form.planned_distance} onChange={e => setForm(f => ({...f, planned_distance: e.target.value}))} />
             </div>
-            <div className="form-group span-2">
+            <div className="form-group">
               <label>Revenue (₹)</label>
-              <input className="form-input" type="number" placeholder="15000" value={form.revenue} onChange={e => setForm(f => ({...f, revenue: e.target.value}))} />
+              <input className="form-input" type="number" value={form.revenue} onChange={e => setForm(f => ({...f, revenue: e.target.value}))} />
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {showComplete && (
+        <Modal title="Complete Trip" onClose={() => setShowComplete(null)}
+          footer={<>
+            <button className="btn btn-ghost" onClick={() => setShowComplete(null)}>Cancel</button>
+            <button className="btn btn-primary" onClick={completeTrip} disabled={saving}>{saving ? 'Completing…' : 'Complete Trip'}</button>
+          </>}>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Final Odometer (km)</label>
+              <input className="form-input" type="number" value={completeForm.final_odometer} onChange={e => setCompleteForm(f => ({...f, final_odometer: e.target.value}))} />
+            </div>
+            <div className="form-group">
+              <label>Fuel Consumed (L)</label>
+              <input className="form-input" type="number" value={completeForm.fuel_consumed} onChange={e => setCompleteForm(f => ({...f, fuel_consumed: e.target.value}))} />
+            </div>
+            <div className="form-group">
+              <label>Actual Distance (km)</label>
+              <input className="form-input" type="number" value={completeForm.actual_distance} onChange={e => setCompleteForm(f => ({...f, actual_distance: e.target.value}))} />
+            </div>
+            <div className="form-group">
+              <label>Revenue (₹)</label>
+              <input className="form-input" type="number" value={completeForm.revenue} onChange={e => setCompleteForm(f => ({...f, revenue: e.target.value}))} />
             </div>
           </div>
         </Modal>
@@ -1100,58 +1068,318 @@ function TripsPage({ trips, setTrips, vehicles, drivers }) {
   )
 }
 
-/* ─── PLACEHOLDER PAGES ──────────────────────────────────────────────────── */
-function PlaceholderPage({ title, icon, desc }) {
+/* ─── FUELING PAGE ───────────────────────────────────────────────────────── */
+function FuelingPage({ vehicles, refreshAll }) {
+  const [logs, setLogs] = useState([])
+  const [expenses, setExpenses] = useState([])
+  const [showAddFuel, setShowAddFuel] = useState(false)
+  const [showAddExpense, setShowAddExpense] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [fuelForm, setFuelForm] = useState({ vehicle_id:'', liters:'', cost:'', date:'' })
+  const [expForm, setExpForm] = useState({ vehicle_id:'', category:'fuel', amount:'', description:'', date:'' })
+
+  useEffect(() => {
+    api.fueling.list().then(setLogs).catch(() => {})
+    api.expenses.list().then(setExpenses).catch(() => {})
+  }, [])
+
+  const addFuel = async () => {
+    if (!fuelForm.vehicle_id || !fuelForm.liters || !fuelForm.date) return
+    setSaving(true)
+    try {
+      await api.fueling.create(fuelForm)
+      setShowAddFuel(false)
+      setFuelForm({ vehicle_id:'', liters:'', cost:'', date:'' })
+      api.fueling.list().then(setLogs)
+      refreshAll()
+    } catch (e) { alert(e.error || 'Failed') }
+    finally { setSaving(false) }
+  }
+
+  const addExpense = async () => {
+    if (!expForm.vehicle_id || !expForm.amount || !expForm.date) return
+    setSaving(true)
+    try {
+      await api.expenses.create(expForm)
+      setShowAddExpense(false)
+      setExpForm({ vehicle_id:'', category:'fuel', amount:'', description:'', date:'' })
+      api.expenses.list().then(setExpenses)
+      refreshAll()
+    } catch (e) { alert(e.error || 'Failed') }
+    finally { setSaving(false) }
+  }
+
   return (
     <>
       <div className="topbar">
         <div className="topbar-left">
-          <h1>{title}</h1>
-          <p>{desc}</p>
+          <h1>Fueling & Expenses</h1>
+          <p>Track fuel consumption and operational costs</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary" onClick={() => setShowAddFuel(true)}><Icon d={Icons.plus} size={14} /> Add Fuel Log</button>
+          <button className="btn btn-ghost" onClick={() => setShowAddExpense(true)}><Icon d={Icons.plus} size={14} /> Add Expense</button>
         </div>
       </div>
-      <div className="page-section">
+
+      <div className="section-grid">
         <div className="card">
-          <div className="empty-state" style={{ padding: 64 }}>
-            <div className="empty-icon"><Icon d={icon} size={40} /></div>
-            <div className="empty-title">{title} module</div>
-            <div className="empty-desc">This section will be implemented by the backend team and linked here.</div>
+          <div className="card-header"><div className="card-title">Fuel Logs</div></div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Vehicle</th><th>Liters</th><th>Cost</th><th>Date</th></tr></thead>
+              <tbody>
+                {logs.length === 0 ? <tr><td colSpan={4}><div className="empty-state"><div className="empty-title">No fuel logs</div></div></td></tr>
+                : logs.map(l => (
+                  <tr key={l.id}>
+                    <td><div className="cell-main">{l.vehicle_name}</div><div className="cell-sub">{l.vehicle_reg}</div></td>
+                    <td>{l.liters} L</td>
+                    <td>{fmt(l.cost)}</td>
+                    <td className="td-muted">{l.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-header"><div className="card-title">Expenses</div></div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Vehicle</th><th>Category</th><th>Amount</th><th>Date</th></tr></thead>
+              <tbody>
+                {expenses.length === 0 ? <tr><td colSpan={4}><div className="empty-state"><div className="empty-title">No expenses</div></div></td></tr>
+                : expenses.map(e => (
+                  <tr key={e.id}>
+                    <td><div className="cell-main">{e.vehicle_name}</div></td>
+                    <td className="td-muted" style={{ textTransform: 'capitalize' }}>{e.category}</td>
+                    <td>{fmt(e.amount)}</td>
+                    <td className="td-muted">{e.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
+
+      {showAddFuel && (
+        <Modal title="Add Fuel Log" onClose={() => setShowAddFuel(false)} footer={<>
+          <button className="btn btn-ghost" onClick={() => setShowAddFuel(false)}>Cancel</button>
+          <button className="btn btn-primary" onClick={addFuel} disabled={saving}>{saving ? 'Saving…' : 'Add'}</button>
+        </>}>
+          <div className="form-grid">
+            <div className="form-group"><label>Vehicle</label>
+              <select className="form-select-full" value={fuelForm.vehicle_id} onChange={e => setFuelForm(f => ({...f, vehicle_id: e.target.value}))}>
+                <option value="">Select…</option>{vehicles.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group"><label>Liters</label><input className="form-input" type="number" value={fuelForm.liters} onChange={e => setFuelForm(f => ({...f, liters: e.target.value}))} /></div>
+            <div className="form-group"><label>Cost (₹)</label><input className="form-input" type="number" value={fuelForm.cost} onChange={e => setFuelForm(f => ({...f, cost: e.target.value}))} /></div>
+            <div className="form-group"><label>Date</label><input className="form-input" type="date" value={fuelForm.date} onChange={e => setFuelForm(f => ({...f, date: e.target.value}))} /></div>
+          </div>
+        </Modal>
+      )}
+
+      {showAddExpense && (
+        <Modal title="Add Expense" onClose={() => setShowAddExpense(false)} footer={<>
+          <button className="btn btn-ghost" onClick={() => setShowAddExpense(false)}>Cancel</button>
+          <button className="btn btn-primary" onClick={addExpense} disabled={saving}>{saving ? 'Saving…' : 'Add'}</button>
+        </>}>
+          <div className="form-grid">
+            <div className="form-group"><label>Vehicle</label>
+              <select className="form-select-full" value={expForm.vehicle_id} onChange={e => setExpForm(f => ({...f, vehicle_id: e.target.value}))}>
+                <option value="">Select…</option>{vehicles.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group"><label>Category</label>
+              <select className="form-select-full" value={expForm.category} onChange={e => setExpForm(f => ({...f, category: e.target.value}))}>
+                <option value="fuel">Fuel</option><option value="toll">Toll</option><option value="maintenance">Maintenance</option><option value="other">Other</option>
+              </select>
+            </div>
+            <div className="form-group"><label>Amount (₹)</label><input className="form-input" type="number" value={expForm.amount} onChange={e => setExpForm(f => ({...f, amount: e.target.value}))} /></div>
+            <div className="form-group"><label>Date</label><input className="form-input" type="date" value={expForm.date} onChange={e => setExpForm(f => ({...f, date: e.target.value}))} /></div>
+            <div className="form-group span-2"><label>Description</label><input className="form-input" value={expForm.description} onChange={e => setExpForm(f => ({...f, description: e.target.value}))} /></div>
+          </div>
+        </Modal>
+      )}
     </>
   )
 }
 
-/* ─── APP ROOT ───────────────────────────────────────────────────────────── */
-export default function App() {
-  const [view,     setView]     = useState('landing')
-  const [page,     setPage]     = useState('dashboard')
-  const [vehicles, setVehicles] = useState(VEHICLES_INIT)
-  const [drivers,  setDrivers]  = useState(DRIVERS_INIT)
-  const [trips,    setTrips]    = useState(TRIPS_INIT)
-  const [selectedDriverId, setSelectedDriverId] = useState(null)
+/* ─── MAINTENANCE PAGE ───────────────────────────────────────────────────── */
+function MaintenancePage({ vehicles, refreshAll }) {
+  const [logs, setLogs] = useState([])
+  const [showAdd, setShowAdd] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({ vehicle_id:'', description:'', cost:'', start_date:'' })
 
-  // Show landing page first
-  if (view === 'landing') {
-    return <LandingPage onEnter={() => setView('app')} />
+  const loadLogs = useCallback(() => api.maintenance.list().then(setLogs).catch(() => {}), [])
+  useEffect(() => { loadLogs() }, [loadLogs])
+
+  const addLog = async () => {
+    if (!form.vehicle_id || !form.description || !form.start_date) return
+    setSaving(true)
+    try {
+      await api.maintenance.create(form)
+      setShowAdd(false)
+      setForm({ vehicle_id:'', description:'', cost:'', start_date:'' })
+      loadLogs()
+      refreshAll()
+    } catch (e) { alert(e.error || 'Failed') }
+    finally { setSaving(false) }
+  }
+
+  const closeLog = async (id) => {
+    try { await api.maintenance.close(id); loadLogs(); refreshAll() }
+    catch (e) { alert(e.error || 'Failed') }
+  }
+
+  return (
+    <>
+      <div className="topbar">
+        <div className="topbar-left">
+          <h1>Maintenance</h1>
+          <p>Scheduled and unscheduled maintenance records</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
+          <Icon d={Icons.plus} size={14} /> Add Record
+        </button>
+      </div>
+
+      <div className="page-section">
+        <div className="card">
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Vehicle</th><th>Description</th><th>Cost</th><th>Start</th><th>End</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                {logs.length === 0 ? <tr><td colSpan={7}><div className="empty-state"><div className="empty-icon"><Icon d={Icons.wrench} size={28} /></div><div className="empty-title">No maintenance records</div></div></td></tr>
+                : logs.map(m => (
+                  <tr key={m.id}>
+                    <td><div className="cell-main">{m.vehicle_name}</div><div className="cell-sub">{m.vehicle_reg}</div></td>
+                    <td style={{ maxWidth: 300 }}>{m.description}</td>
+                    <td>{fmt(m.cost)}</td>
+                    <td className="td-muted">{m.start_date}</td>
+                    <td className="td-muted">{m.end_date || '—'}</td>
+                    <td><Badge status={m.status} /></td>
+                    <td>
+                      {m.status === 'active' && (
+                        <button className="btn btn-primary" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => closeLog(m.id)}>
+                          <Icon d={Icons.check} size={12} /> Close
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {showAdd && (
+        <Modal title="Add Maintenance Record" onClose={() => setShowAdd(false)} footer={<>
+          <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Cancel</button>
+          <button className="btn btn-primary" onClick={addLog} disabled={saving}>{saving ? 'Saving…' : 'Create'}</button>
+        </>}>
+          <div className="form-grid">
+            <div className="form-group"><label>Vehicle</label>
+              <select className="form-select-full" value={form.vehicle_id} onChange={e => setForm(f => ({...f, vehicle_id: e.target.value}))}>
+                <option value="">Select…</option>{vehicles.filter(v => v.status !== 'retired' && v.status !== 'on_trip').map(v => <option key={v.id} value={v.id}>{v.name} ({v.registration_number})</option>)}
+              </select>
+            </div>
+            <div className="form-group"><label>Cost (₹)</label><input className="form-input" type="number" value={form.cost} onChange={e => setForm(f => ({...f, cost: e.target.value}))} /></div>
+            <div className="form-group"><label>Start Date</label><input className="form-input" type="date" value={form.start_date} onChange={e => setForm(f => ({...f, start_date: e.target.value}))} /></div>
+            <div className="form-group span-2"><label>Description</label><textarea className="form-input" rows={3} value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} /></div>
+          </div>
+        </Modal>
+      )}
+    </>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   APP — Main Component
+   ═══════════════════════════════════════════════════════════════════════════ */
+export default function App() {
+  const [user, setUser] = useState(null)
+  const [authChecked, setAuthChecked] = useState(false)
+  const [showLanding, setShowLanding] = useState(true)
+  const [page, setPage] = useState('dashboard')
+
+  // Data state
+  const [vehicles, setVehicles] = useState([])
+  const [driversList, setDriversList] = useState([])
+  const [tripsList, setTripsList] = useState([])
+  const [stats, setStats] = useState({})
+
+  // Check existing session on mount
+  useEffect(() => {
+    api.auth.me()
+      .then(u => { setUser(u); setShowLanding(false) })
+      .catch(() => {})
+      .finally(() => setAuthChecked(true))
+  }, [])
+
+  // Fetch data when logged in
+  const refreshVehicles = useCallback(() => { api.vehicles.list().then(setVehicles).catch(() => {}) }, [])
+  const refreshDrivers = useCallback(() => { api.drivers.list().then(setDriversList).catch(() => {}) }, [])
+  const refreshTrips = useCallback(() => { api.trips.list().then(setTripsList).catch(() => {}) }, [])
+  const refreshStats = useCallback(() => { api.dashboard.stats().then(setStats).catch(() => {}) }, [])
+  const refreshAll = useCallback(() => { refreshVehicles(); refreshDrivers(); refreshTrips(); refreshStats() }, [refreshVehicles, refreshDrivers, refreshTrips, refreshStats])
+
+  useEffect(() => {
+    if (user) refreshAll()
+  }, [user, refreshAll])
+
+  const handleLogin = (u) => {
+    setUser(u)
+    setShowLanding(false)
+  }
+
+  const handleLogout = async () => {
+    await api.auth.logout()
+    setUser(null)
+    setShowLanding(true)
+  }
+
+  // Loading screen
+  if (!authChecked) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-body)', color: 'var(--text-secondary)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <Icon d={Icons.truck} size={32} />
+          <div style={{ marginTop: 12, fontSize: 14 }}>Loading TransitOps…</div>
+        </div>
+      </div>
+    )
+  }
+
+  // Landing page
+  if (showLanding && !user) {
+    return <LandingPage onEnter={() => setShowLanding(false)} />
+  }
+
+  // Login page
+  if (!user) {
+    return <LoginPage onLogin={handleLogin} />
   }
 
   const renderPage = () => {
     switch(page) {
-      case 'dashboard':   return <DashboardPage vehicles={vehicles} drivers={drivers} trips={trips} setSelectedDriverId={setSelectedDriverId} setPage={setPage} />
-      case 'vehicles':    return <VehiclesPage vehicles={vehicles} setVehicles={setVehicles} />
-      case 'drivers':     return <DriversPage drivers={drivers} setDrivers={setDrivers} selectedDriverId={selectedDriverId} setSelectedDriverId={setSelectedDriverId} />
-      case 'trips':       return <TripsPage trips={trips} setTrips={setTrips} vehicles={vehicles} drivers={drivers} />
-      case 'fueling':     return <PlaceholderPage title="Fueling" icon={Icons.fuel} desc="Fuel logs and consumption tracking" />
-      case 'maintenance': return <PlaceholderPage title="Maintenance" icon={Icons.wrench} desc="Scheduled and unscheduled maintenance records" />
-      default:            return <DashboardPage vehicles={vehicles} drivers={drivers} trips={trips} />
+      case 'dashboard':   return <DashboardPage vehicles={vehicles} drivers={driversList} trips={tripsList} stats={stats} />
+      case 'vehicles':    return <VehiclesPage vehicles={vehicles} refreshVehicles={refreshVehicles} />
+      case 'drivers':     return <DriversPage drivers={driversList} refreshDrivers={refreshDrivers} />
+      case 'trips':       return <TripsPage trips={tripsList} refreshTrips={refreshTrips} vehicles={vehicles} drivers={driversList} />
+      case 'fueling':     return <FuelingPage vehicles={vehicles} refreshAll={refreshAll} />
+      case 'maintenance': return <MaintenancePage vehicles={vehicles} refreshAll={refreshAll} />
+      default:            return <DashboardPage vehicles={vehicles} drivers={driversList} trips={tripsList} stats={stats} />
     }
   }
 
   return (
     <div className="app-shell">
-      <Sidebar page={page} setPage={setPage} />
+      <Sidebar page={page} setPage={setPage} user={user} onLogout={handleLogout} />
       <main className="main-content">
         {renderPage()}
       </main>

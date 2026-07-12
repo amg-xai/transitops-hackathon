@@ -333,6 +333,7 @@ function getCoords(cityName, fallbackIndex = 0) {
 function LiveTransitMap({ trips }) {
   const center = [20.5937, 78.9629] // Center of India
   const activeTrips = trips.filter(t => t.status === 'dispatched')
+  const completedCount = trips.filter(t => t.status === 'completed').length
 
   const mapboxToken = [
     'pk',
@@ -343,16 +344,17 @@ function LiveTransitMap({ trips }) {
   const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`;
 
   return (
-    <div className="card live-map-card">
-      <div className="card-header">
-        <div className="card-title">Live Transits</div>
-        <div className="card-subtitle">Active vehicles en route (interactive routes)</div>
-      </div>
-      <div className="card-body" style={{ padding: 0, position: 'relative' }}>
-        <MapContainer center={center} zoom={5} style={{ height: 400, width: '100%', borderRadius: '0 0 var(--r-xl) var(--r-xl)', background: '#111' }} zoomControl={false}>
+    <div className="card live-map-card" style={{ position: 'relative' }}>
+      <div style={{ position: 'relative' }}>
+        <MapContainer
+          center={center}
+          zoom={5}
+          style={{ height: 520, width: '100%', borderRadius: 'var(--r-xl)', background: '#08080f' }}
+          zoomControl={false}
+        >
           <TileLayer
             url={mapboxUrl}
-            attribution='&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            attribution='&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a>'
             tileSize={512}
             zoomOffset={-1}
           />
@@ -366,39 +368,46 @@ function LiveTransitMap({ trips }) {
 
             return (
               <span key={trip.id}>
-                {/* Route Line */}
+                {/* Glow route line */}
                 <Polyline
                   positions={[start, end]}
-                  color="var(--s-blue)"
-                  weight={2}
-                  dashArray="4, 8"
-                  opacity={0.6}
+                  color="rgba(129,140,248,0.15)"
+                  weight={8}
+                  opacity={1}
                 />
-                {/* Source Marker */}
-                <CircleMarker center={start} radius={4} color="var(--s-gray)" fillOpacity={0.6} stroke={false}>
-                  <Popup><strong>Source:</strong> {trip.source}</Popup>
+                {/* Main route line */}
+                <Polyline
+                  positions={[start, end]}
+                  color="#818cf8"
+                  weight={2.5}
+                  dashArray="6, 10"
+                  opacity={0.85}
+                />
+                {/* Source dot */}
+                <CircleMarker center={start} radius={5} color="#34d399" fillColor="#34d399" fillOpacity={0.9} weight={0}>
+                  <Popup><strong>Origin:</strong> {trip.source}</Popup>
                 </CircleMarker>
-                {/* Destination Marker */}
-                <CircleMarker center={end} radius={4} color="var(--s-green)" fillOpacity={0.8} stroke={false}>
+                {/* Destination dot */}
+                <CircleMarker center={end} radius={5} color="#f59e0b" fillColor="#f59e0b" fillOpacity={0.9} weight={0}>
                   <Popup><strong>Destination:</strong> {trip.destination}</Popup>
                 </CircleMarker>
-                {/* Active Vehicle Marker */}
+                {/* Vehicle in transit */}
                 <CircleMarker
                   center={mid}
-                  radius={7}
-                  color="var(--s-blue)"
-                  fillColor="var(--bg-base)"
-                  fillOpacity={1}
-                  weight={2.5}
+                  radius={9}
+                  color="rgba(129,140,248,0.6)"
+                  fillColor="#818cf8"
+                  fillOpacity={0.95}
+                  weight={3}
                 >
                   <Popup>
-                    <div style={{ fontSize: 12, lineHeight: 1.5 }}>
-                      <strong>Trip #{trip.id}</strong><br />
+                    <div style={{ fontSize: 12, lineHeight: 1.6 }}>
+                      <strong style={{ color: '#818cf8', fontSize: 13 }}>Trip #{trip.id}</strong><br />
                       <strong>Vehicle:</strong> {trip.vehicle_name} ({trip.vehicle_reg})<br />
                       <strong>Driver:</strong> {trip.driver_name}<br />
                       <strong>Route:</strong> {trip.source} → {trip.destination}<br />
                       <strong>Load:</strong> {trip.cargo_weight} kg<br />
-                      <span className="badge badge-active" style={{ marginTop: 4, display: 'inline-block' }}>In Transit</span>
+                      <span style={{ display: 'inline-block', marginTop: 6, background: 'rgba(52,211,153,0.12)', color: '#34d399', padding: '2px 8px', borderRadius: 100, fontSize: 11, border: '1px solid rgba(52,211,153,0.25)' }}>● In Transit</span>
                     </div>
                   </Popup>
                 </CircleMarker>
@@ -406,7 +415,40 @@ function LiveTransitMap({ trips }) {
             );
           })}
         </MapContainer>
+
+        {/* Gradient overlay */}
         <div className="map-overlay" />
+
+        {/* Title overlay */}
+        <div className="map-title-overlay">
+          <h3>Live Fleet Telemetry</h3>
+          <p>Real-time vehicle positions across all active routes</p>
+        </div>
+
+        {/* Stats pills overlay */}
+        <div className="map-stats-overlay">
+          <div className="map-stat-pill">
+            <div className="map-stat-pill-dot" style={{ background: '#818cf8' }} />
+            <span><strong>{activeTrips.length}</strong> vehicles in transit</span>
+          </div>
+          <div className="map-stat-pill">
+            <div className="map-stat-pill-dot" style={{ background: '#34d399' }} />
+            <span><strong>{completedCount}</strong> trips completed today</span>
+          </div>
+          <div className="map-stat-pill">
+            <div className="map-stat-pill-dot" style={{ background: '#f59e0b' }} />
+            <span><strong>{trips.length}</strong> total routes tracked</span>
+          </div>
+        </div>
+
+        {/* Legend bottom-right */}
+        <div style={{ position: 'absolute', bottom: 20, right: 16, zIndex: 500, display: 'flex', gap: 12, flexDirection: 'column', alignItems: 'flex-end', pointerEvents: 'none' }}>
+          <div style={{ display: 'flex', gap: 16, background: 'rgba(13,13,18,0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(129,140,248,0.15)', borderRadius: 10, padding: '10px 16px', fontSize: 11, color: 'var(--text-secondary)' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399', display: 'inline-block' }} /> Origin</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#818cf8', display: 'inline-block' }} /> En Route</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} /> Destination</span>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -415,12 +457,12 @@ function LiveTransitMap({ trips }) {
 /* ─── DASHBOARD PAGE ─────────────────────────────────────────────────────── */
 function DashboardPage({ vehicles, drivers, trips, stats }) {
   const kpis = [
-    { label: 'Total Vehicles', value: stats.total_vehicles, icon: Icons.truck, footer: `${stats.available_vehicles} available` },
-    { label: 'Active Trips', value: stats.active_trips, icon: Icons.trip, footer: `${stats.drivers_on_duty} drivers on duty`, footerClass: stats.active_trips > 0 ? 'up' : '' },
-    { label: 'Fleet Utilization', value: `${stats.fleet_utilization}%`, icon: Icons.dispatch, footer: `${stats.on_trip_vehicles} vehicles moving`, footerClass: stats.fleet_utilization > 60 ? 'up' : 'down' },
-    { label: 'Revenue (Completed)', value: fmt(stats.revenue || 0), icon: Icons.check, footer: `${stats.completed_trips_count} trips done`, footerClass: 'up' },
-    { label: 'In Maintenance', value: stats.in_shop_vehicles, icon: Icons.wrench, footer: `${stats.retired_vehicles} retired` },
-    { label: 'Available Drivers', value: stats.available_drivers, icon: Icons.driver, footer: 'Ready to dispatch', footerClass: 'up' },
+    { label: 'Total Vehicles', value: stats.total_vehicles, icon: Icons.truck, footer: `${stats.available_vehicles} available`, glow: 'rgba(96,165,250,0.08)' },
+    { label: 'Active Trips', value: stats.active_trips, icon: Icons.trip, footer: `${stats.drivers_on_duty} drivers on duty`, footerClass: stats.active_trips > 0 ? 'up' : '', glow: 'rgba(129,140,248,0.10)' },
+    { label: 'Fleet Utilization', value: `${stats.fleet_utilization}%`, icon: Icons.dispatch, footer: `${stats.on_trip_vehicles} vehicles moving`, footerClass: stats.fleet_utilization > 60 ? 'up' : 'down', glow: 'rgba(52,211,153,0.08)' },
+    { label: 'Revenue (Completed)', value: fmt(stats.revenue || 0), icon: Icons.check, footer: `${stats.completed_trips_count} trips done`, footerClass: 'up', glow: 'rgba(52,211,153,0.10)' },
+    { label: 'In Maintenance', value: stats.in_shop_vehicles, icon: Icons.wrench, footer: `${stats.retired_vehicles} retired`, glow: 'rgba(251,191,36,0.08)' },
+    { label: 'Available Drivers', value: stats.available_drivers, icon: Icons.driver, footer: 'Ready to dispatch', footerClass: 'up', glow: 'rgba(167,139,250,0.10)' },
   ]
 
   const tripsByDay = [
@@ -443,14 +485,17 @@ function DashboardPage({ vehicles, drivers, trips, stats }) {
     <>
       <div className="topbar">
         <div className="topbar-left">
-          <h1>Dashboard</h1>
-          <p>Fleet overview — {new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' })}</p>
+          <h1 style={{ background: 'linear-gradient(135deg, var(--text-primary) 0%, var(--accent-bright) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Dashboard</h1>
+          <p style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--s-green)', display: 'inline-block', boxShadow: '0 0 8px rgba(52,211,153,0.6)', animation: 'dotBlink 2s infinite' }} />
+            Fleet overview — {new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' })}
+          </p>
         </div>
       </div>
 
       <div className="kpi-grid">
         {kpis.map((k, i) => (
-          <div className="kpi-card" key={i}>
+          <div className="kpi-card" key={i} style={{ '--kpi-glow': k.glow }}>
             <div className="kpi-card-header">
               <span className="kpi-label">{k.label}</span>
               <div className="kpi-icon"><Icon d={k.icon} size={14} /></div>

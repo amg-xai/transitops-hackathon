@@ -1,6 +1,17 @@
 import { useState, useMemo } from 'react'
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
 import './index.css'
 import LandingPage from './LandingPage'
+
+/* Fix for default leaflet icons in React */
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 /* ─── ICONS (inline SVG helpers) ──────────────────────────────────────── */
 const Icon = ({ d, size = 16, ...p }) => (
@@ -51,11 +62,12 @@ const DRIVERS_INIT = [
 ]
 
 const TRIPS_INIT = [
-  { id: 1, vehicle_id: 2, driver_id: 2, source: 'Bangalore', destination: 'Mumbai',   cargo_weight: 4500, planned_distance: 984,  revenue: 45000, status: 'dispatched',created_at: '2026-07-10' },
-  { id: 2, vehicle_id: 4, driver_id: 1, source: 'Pune',      destination: 'Hyderabad',cargo_weight: 300,  planned_distance: 560,  revenue: 12000, status: 'draft',    created_at: '2026-07-11' },
-  { id: 3, vehicle_id: 1, driver_id: 3, source: 'Bangalore', destination: 'Chennai',  cargo_weight: 600,  planned_distance: 346,  revenue: 18000, status: 'completed',created_at: '2026-07-08' },
-  { id: 4, vehicle_id: 5, driver_id: 6, source: 'Delhi',     destination: 'Jaipur',   cargo_weight: 9200, planned_distance: 270,  revenue: 38000, status: 'completed',created_at: '2026-07-07' },
-  { id: 5, vehicle_id: 1, driver_id: 1, source: 'Bangalore', destination: 'Mysuru',   cargo_weight: 700,  planned_distance: 144,  revenue: 8500,  status: 'cancelled',created_at: '2026-07-09' },
+  { id: 1, vehicle_id: 2, driver_id: 2, source: 'Bangalore', destination: 'Mumbai',   cargo_weight: 4500, planned_distance: 984,  revenue: 45000, status: 'dispatched',created_at: '2026-07-10', sourceCoords: [12.9716, 77.5946], destCoords: [19.0760, 72.8777], currentCoords: [15.3173, 75.7139] },
+  { id: 2, vehicle_id: 4, driver_id: 1, source: 'Pune',      destination: 'Hyderabad',cargo_weight: 300,  planned_distance: 560,  revenue: 12000, status: 'draft',    created_at: '2026-07-11', sourceCoords: [18.5204, 73.8567], destCoords: [17.3850, 78.4867] },
+  { id: 3, vehicle_id: 1, driver_id: 3, source: 'Bangalore', destination: 'Chennai',  cargo_weight: 600,  planned_distance: 346,  revenue: 18000, status: 'completed',created_at: '2026-07-08', sourceCoords: [12.9716, 77.5946], destCoords: [13.0827, 80.2707] },
+  { id: 4, vehicle_id: 5, driver_id: 6, source: 'Delhi',     destination: 'Jaipur',   cargo_weight: 9200, planned_distance: 270,  revenue: 38000, status: 'completed',created_at: '2026-07-07', sourceCoords: [28.7041, 77.1025], destCoords: [26.9124, 75.7873] },
+  { id: 5, vehicle_id: 1, driver_id: 1, source: 'Bangalore', destination: 'Mysuru',   cargo_weight: 700,  planned_distance: 144,  revenue: 8500,  status: 'cancelled',created_at: '2026-07-09', sourceCoords: [12.9716, 77.5946], destCoords: [12.2958, 76.6394] },
+  { id: 6, vehicle_id: 3, driver_id: 4, source: 'Hyderabad', destination: 'Vizag',    cargo_weight: 1500, planned_distance: 620,  revenue: 21000, status: 'dispatched',created_at: '2026-07-12', sourceCoords: [17.3850, 78.4867], destCoords: [17.6868, 83.2185], currentCoords: [17.5000, 80.5000] },
 ]
 
 /* ─── HELPERS ──────────────────────────────────────────────────────────── */
@@ -204,6 +216,72 @@ function BarChart({ data, color = 'var(--text-primary)' }) {
   )
 }
 
+/* ─── LIVE TRANSIT MAP ───────────────────────────────────────────────────── */
+function LiveTransitMap({ trips }) {
+  // Center roughly on central India
+  const center = [19.0, 78.0];
+  const activeTrips = trips.filter(t => t.status === 'dispatched' && t.sourceCoords && t.destCoords);
+
+  return (
+    <div className="card live-map-card">
+      <div className="card-header">
+        <div className="card-title">Live Transits</div>
+        <div className="card-subtitle">Active vehicles en route</div>
+      </div>
+      <div className="card-body" style={{ padding: 0, position: 'relative' }}>
+        <MapContainer center={center} zoom={5} style={{ height: 400, width: '100%', borderRadius: '0 0 var(--r-xl) var(--r-xl)' }} zoomControl={false}>
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; CartoDB'
+          />
+          {activeTrips.map(trip => (
+            <div key={trip.id}>
+              {/* Route Line */}
+              <Polyline 
+                positions={[trip.sourceCoords, trip.destCoords]} 
+                color="var(--s-blue)" 
+                weight={3} 
+                opacity={0.3} 
+                dashArray="6, 8"
+              />
+              
+              {/* Passed Route Line */}
+              {trip.currentCoords && (
+                <Polyline 
+                  positions={[trip.sourceCoords, trip.currentCoords]} 
+                  color="var(--s-blue)" 
+                  weight={4} 
+                  opacity={0.8} 
+                />
+              )}
+
+              {/* Source & Dest Dots */}
+              <Marker position={trip.sourceCoords} opacity={0.6}>
+                <Popup>{trip.source} (Source)</Popup>
+              </Marker>
+              <Marker position={trip.destCoords} opacity={0.6}>
+                <Popup>{trip.destination} (Destination)</Popup>
+              </Marker>
+
+              {/* Current Position Marker */}
+              {trip.currentCoords && (
+                <Marker position={trip.currentCoords}>
+                  <Popup>
+                    <strong>Trip #{trip.id}</strong><br/>
+                    {trip.source} &rarr; {trip.destination}
+                  </Popup>
+                </Marker>
+              )}
+            </div>
+          ))}
+        </MapContainer>
+        {/* Map overlay gradient for aesthetic blending */}
+        <div className="map-overlay" />
+      </div>
+    </div>
+  )
+}
+
 /* ─── DASHBOARD PAGE ─────────────────────────────────────────────────────── */
 function DashboardPage({ vehicles, drivers, trips }) {
   const totalVeh   = vehicles.length
@@ -298,6 +376,11 @@ function DashboardPage({ vehicles, drivers, trips }) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Live Map Section */}
+      <div className="page-section" style={{ marginTop: 24 }}>
+        <LiveTransitMap trips={trips} />
       </div>
 
       {/* Recent Trips */}

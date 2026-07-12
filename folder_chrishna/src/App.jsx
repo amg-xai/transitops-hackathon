@@ -250,28 +250,94 @@ function BarChart({ data, color = 'var(--text-primary)' }) {
   )
 }
 
-/* ─── LIVE TRANSIT MAP ───────────────────────────────────────────────────── */
+const CITIES = {
+  'bangalore': [12.9716, 77.5946],
+  'bengaluru': [12.9716, 77.5946],
+  'mumbai': [19.0760, 72.8777],
+  'delhi': [28.6139, 77.2090],
+  'new delhi': [28.6139, 77.2090],
+  'chennai': [13.0827, 80.2707],
+  'kolkata': [22.5726, 88.3639],
+  'hyderabad': [17.3850, 78.4867],
+  'pune': [18.5204, 73.8567],
+  'ahmedabad': [23.0225, 72.5714],
+  'jaipur': [26.9124, 75.7873],
+};
+
+function getCoords(cityName, fallbackIndex = 0) {
+  const clean = (cityName || '').trim().toLowerCase();
+  if (CITIES[clean]) return CITIES[clean];
+  const hash = clean.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const lat = 20.0 + ((hash % 8) - 4) * 1.8 + fallbackIndex * 0.15;
+  const lng = 77.0 + (((hash >> 2) % 8) - 4) * 1.8 + fallbackIndex * 0.15;
+  return [lat, lng];
+}
+
 function LiveTransitMap({ trips }) {
-  const center = [19.0, 78.0]
+  const center = [20.5937, 78.9629] // Center of India
   const activeTrips = trips.filter(t => t.status === 'dispatched')
 
   return (
     <div className="card live-map-card">
       <div className="card-header">
         <div className="card-title">Live Transits</div>
-        <div className="card-subtitle">Active vehicles en route</div>
+        <div className="card-subtitle">Active vehicles en route (interactive routes)</div>
       </div>
       <div className="card-body" style={{ padding: 0, position: 'relative' }}>
-        <MapContainer center={center} zoom={5} style={{ height: 400, width: '100%', borderRadius: '0 0 var(--r-xl) var(--r-xl)' }} zoomControl={false}>
+        <MapContainer center={center} zoom={5} style={{ height: 400, width: '100%', borderRadius: '0 0 var(--r-xl) var(--r-xl)', background: '#111' }} zoomControl={false}>
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           />
-          {activeTrips.map(trip => (
-            <CircleMarker key={trip.id} center={center} radius={6} color="var(--s-blue)" fillOpacity={0.8}>
-              <Popup><strong>Trip #{trip.id}</strong><br />{trip.source} → {trip.destination}</Popup>
-            </CircleMarker>
-          ))}
+          {activeTrips.map(trip => {
+            const start = getCoords(trip.source, trip.id);
+            const end = getCoords(trip.destination, trip.id + 1);
+            const mid = [
+              (start[0] + end[0]) / 2,
+              (start[1] + end[1]) / 2
+            ];
+
+            return (
+              <span key={trip.id}>
+                {/* Route Line */}
+                <Polyline
+                  positions={[start, end]}
+                  color="var(--s-blue)"
+                  weight={2}
+                  dashArray="4, 8"
+                  opacity={0.6}
+                />
+                {/* Source Marker */}
+                <CircleMarker center={start} radius={4} color="var(--s-gray)" fillOpacity={0.6} stroke={false}>
+                  <Popup><strong>Source:</strong> {trip.source}</Popup>
+                </CircleMarker>
+                {/* Destination Marker */}
+                <CircleMarker center={end} radius={4} color="var(--s-green)" fillOpacity={0.8} stroke={false}>
+                  <Popup><strong>Destination:</strong> {trip.destination}</Popup>
+                </CircleMarker>
+                {/* Active Vehicle Marker */}
+                <CircleMarker
+                  center={mid}
+                  radius={7}
+                  color="var(--s-blue)"
+                  fillColor="var(--bg-base)"
+                  fillOpacity={1}
+                  weight={2.5}
+                >
+                  <Popup>
+                    <div style={{ fontSize: 12, lineHeight: 1.5 }}>
+                      <strong>Trip #{trip.id}</strong><br />
+                      <strong>Vehicle:</strong> {trip.vehicle_name} ({trip.vehicle_reg})<br />
+                      <strong>Driver:</strong> {trip.driver_name}<br />
+                      <strong>Route:</strong> {trip.source} → {trip.destination}<br />
+                      <strong>Load:</strong> {trip.cargo_weight} kg<br />
+                      <span className="badge badge-active" style={{ marginTop: 4, display: 'inline-block' }}>In Transit</span>
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              </span>
+            );
+          })}
         </MapContainer>
         <div className="map-overlay" />
       </div>

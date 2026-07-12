@@ -15,6 +15,13 @@
 
 ---
 
+### 🌐 Live Production Deployment
+**Frontend (Vite + React SPA on Vercel):** [https://transitops-frontend-taupe.vercel.app](https://transitops-frontend-taupe.vercel.app)
+
+*Note: The frontend is configured with an automatic mock API fallback. If the local Django backend is not running, it automatically switches to a fully interactive localStorage database, making it 100% functional out-of-the-box on Vercel!*
+
+---
+
 ## 🌟 Overview
 
 > [!IMPORTANT]

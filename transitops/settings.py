@@ -37,6 +37,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # local apps
+    'core',
+    'vehicles',
+    'drivers',
+    'trips',
+    'maintenance',
+    'fueling',
+    'dashboard',
 ]
 
 MIDDLEWARE = [
@@ -79,7 +87,7 @@ DATABASES = {
     }
 }
 
-
+AUTH_USER_MODEL = 'core.User'
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 

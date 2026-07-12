@@ -100,31 +100,88 @@ function LoginPage({ onLogin }) {
 
   return (
     <div className="login-page">
-      <div className="login-card">
-        <div className="login-brand">
-          <div className="sidebar-brand-icon"><Icon d={Icons.truck} size={16} /></div>
-          <div>
-            <div className="sidebar-brand-name">TransitOps</div>
-            <div className="sidebar-brand-sub">Fleet Management</div>
+      <div className="login-left">
+        <div className="login-card">
+          <div className="login-brand">
+            <div className="sidebar-brand-icon"><Icon d={Icons.truck} size={16} /></div>
+            <div>
+              <div className="sidebar-brand-name">TransitOps</div>
+              <div className="sidebar-brand-sub">Fleet Management</div>
+            </div>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Username</label>
+              <input className="form-input" value={username} onChange={e => setUsername(e.target.value)} placeholder="e.g. fleet1" autoFocus />
+            </div>
+            <div className="form-group">
+              <label>Password</label>
+              <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="demo1234" />
+            </div>
+            {error && <div style={{ color: 'var(--s-red)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+            <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
+              {loading ? 'Signing in…' : 'Sign In'}
+            </button>
+          </form>
+          <div style={{ marginTop: 20, fontSize: 11.5, color: 'var(--text-tertiary)', textAlign: 'center', lineHeight: 1.7 }}>
+            Demo: <strong>fleet1</strong> / <strong>demo1234</strong>
           </div>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Username</label>
-            <input className="form-input" value={username} onChange={e => setUsername(e.target.value)} placeholder="e.g. fleet1" autoFocus />
+      </div>
+      <div className="login-right">
+        <div className="login-graphic-content">
+          <div className="login-badge-telemetry">Telemetry Stream</div>
+          <h2 className="login-graphic-title">Command Center for Modern Logistics</h2>
+          <p className="login-graphic-text">
+            Optimize routes, enforce safety compliance, and coordinate fleet assets in a unified interface.
+          </p>
+
+          <div className="login-simulation">
+            <svg width="100%" height="200" viewBox="0 0 400 200" fill="none" style={{ background: 'rgba(10,10,10,0.4)', border: '1px solid var(--bg-border)', borderRadius: 'var(--r-lg)' }}>
+              <defs>
+                <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.015)" strokeWidth="1"/>
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)" />
+
+              <path d="M 50 100 Q 150 30 250 100 T 350 100" stroke="rgba(96, 165, 250, 0.2)" strokeWidth="2" strokeDasharray="4 6" />
+              <path d="M 50 100 Q 150 170 250 100 T 350 100" stroke="rgba(74, 222, 128, 0.15)" strokeWidth="1.5" strokeDasharray="3 5" />
+
+              <circle cx="50" cy="100" r="5" fill="var(--s-blue)" />
+              <circle cx="250" cy="100" r="4" fill="var(--s-gray)" />
+              <circle cx="350" cy="100" r="5" fill="var(--s-green)" />
+
+              <text x="50" y="85" fill="var(--text-secondary)" fontSize="9" fontWeight="600" textAnchor="middle" fontFamily="var(--font-body)">HUB A</text>
+              <text x="250" y="85" fill="var(--text-tertiary)" fontSize="9" fontWeight="600" textAnchor="middle" fontFamily="var(--font-body)">TRANSIT B</text>
+              <text x="350" y="85" fill="var(--text-secondary)" fontSize="9" fontWeight="600" textAnchor="middle" fontFamily="var(--font-body)">HUB C</text>
+
+              <circle r="4" fill="var(--s-blue)">
+                <animateMotion dur="5s" repeatCount="indefinite" path="M 50 100 Q 150 30 250 100 T 350 100" />
+              </circle>
+              <circle r="3" fill="var(--s-green)">
+                <animateMotion dur="8s" repeatCount="indefinite" path="M 50 100 Q 150 170 250 100 T 350 100" />
+              </circle>
+            </svg>
           </div>
-          <div className="form-group">
-            <label>Password</label>
-            <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="demo1234" />
+
+          <div className="login-features-list">
+            <div className="login-feature-item">
+              <span className="bullet green" />
+              <span><strong>Rule Engine:</strong> Instant cargo limit & driver safety audits.</span>
+            </div>
+            <div className="login-feature-item">
+              <span className="bullet blue" />
+              <span><strong>Live Telemetry:</strong> Automatic vehicle status synchronization.</span>
+            </div>
+            <div className="login-feature-item">
+              <span className="bullet amber" />
+              <span><strong>Cost Metrics:</strong> Dynamic fuel efficiency & ROI calculators.</span>
+            </div>
           </div>
-          {error && <div style={{ color: 'var(--s-red)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
-          <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
-            {loading ? 'Signing in…' : 'Sign In'}
-          </button>
-        </form>
-        <div style={{ marginTop: 20, fontSize: 11.5, color: 'var(--text-tertiary)', textAlign: 'center', lineHeight: 1.7 }}>
-          Demo: <strong>fleet1</strong> / <strong>demo1234</strong>
         </div>
+        <div className="login-grid-bg" />
+        <div className="login-glow-orb" />
       </div>
     </div>
   )

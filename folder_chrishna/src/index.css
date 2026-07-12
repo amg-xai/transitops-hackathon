@@ -1592,11 +1592,40 @@ label {
 /* ─── LOGIN PAGE ────────────────────────────────────────────────────────── */
 .login-page {
   display: flex;
+  flex-direction: row;
+  height: 100vh;
+  min-height: 100vh;
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+.login-left {
+  flex: 1;
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
   background: var(--bg-base);
-  padding: 20px;
+  padding: 40px;
+  z-index: 10;
+}
+.login-right {
+  flex: 1.2;
+  background: #080808;
+  border-left: 1px solid var(--bg-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 60px;
+  z-index: 5;
+}
+@media (max-width: 950px) {
+  .login-right {
+    display: none;
+  }
 }
 .login-card {
   background: var(--bg-raised);
@@ -1604,8 +1633,8 @@ label {
   border-radius: var(--r-xl);
   padding: 40px 36px;
   width: 100%;
-  max-width: 400px;
-  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+  max-width: 380px;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
 }
 .login-brand {
   display: flex;
@@ -1614,21 +1643,101 @@ label {
   margin-bottom: 32px;
   justify-content: center;
 }
-.login-card .form-group {
+.login-left .form-group {
   margin-bottom: 16px;
 }
-.login-card label {
+.login-left label {
   display: block;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 6px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
-.login-card .btn {
+.login-left .btn {
   margin-top: 8px;
   height: 42px;
   font-size: 14px;
+}
+.login-graphic-content {
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  position: relative;
+  z-index: 15;
+}
+.login-badge-telemetry {
+  align-self: flex-start;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.login-graphic-title {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 3.2vw, 46px);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.login-graphic-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.login-simulation {
+  width: 100%;
+}
+.login-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.login-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.login-feature-item .bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.login-feature-item .bullet.green { background: var(--s-green); }
+.login-feature-item .bullet.blue { background: var(--s-blue); }
+.login-feature-item .bullet.amber { background: var(--s-amber); }
+
+.login-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--bg-border) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.4;
+  z-index: 6;
+}
+.login-glow-orb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(96,165,250,0.045) 0%, rgba(0,0,0,0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 7;
+  filter: blur(40px);
 }
 
 /* ─── TEXTAREA ──────────────────────────────────────────────────────────── */

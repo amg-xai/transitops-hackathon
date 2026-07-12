@@ -1,10 +1,10 @@
-from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import IntegrityError
+from django.db.models import Q
 from core.permissions import role_required
-from .models import Vehicle
+from .models import Vehicle, VehicleDocument
 
 @login_required
 def vehicle_list(request):
@@ -25,8 +25,7 @@ def vehicle_list(request):
         vehicles = vehicles.filter(vehicle_type=vtype)
 
     allowed_sorts = ['registration_number', 'name', 'vehicle_type', 'max_load_capacity', 'odometer', 'status']
-    sort_field = sort.lstrip('-')
-    if sort_field not in allowed_sorts:
+    if sort.lstrip('-') not in allowed_sorts:
         sort = 'registration_number'
     vehicles = vehicles.order_by(sort)
 
@@ -84,3 +83,38 @@ def vehicle_delete(request, pk):
         messages.success(request, 'Vehicle deleted.')
         return redirect('vehicle_list')
     return render(request, 'vehicles/vehicle_confirm_delete.html', {'vehicle': vehicle})
+
+@login_required
+def vehicle_documents(request, pk):
+    vehicle = get_object_or_404(Vehicle, pk=pk)
+    documents = vehicle.documents.all().order_by('-uploaded_at')
+    return render(request, 'vehicles/vehicle_documents.html', {'vehicle': vehicle, 'documents': documents})
+
+@role_required('fleet_manager', redirect_to='vehicle_list')
+def document_upload(request, pk):
+    vehicle = get_object_or_404(Vehicle, pk=pk)
+    if request.method == 'POST':
+        f = request.FILES.get('file')
+        if not f:
+            messages.error(request, 'Please choose a file to upload.')
+        else:
+            VehicleDocument.objects.create(
+                vehicle=vehicle,
+                document_type=request.POST['document_type'],
+                file=f,
+                expiry_date=request.POST.get('expiry_date') or None,
+                uploaded_by=request.user,
+            )
+            messages.success(request, 'Document uploaded.')
+            return redirect('vehicle_documents', pk=vehicle.pk)
+    return render(request, 'vehicles/document_upload.html', {'vehicle': vehicle})
+
+@role_required('fleet_manager', redirect_to='vehicle_list')
+def document_delete(request, doc_pk):
+    doc = get_object_or_404(VehicleDocument, pk=doc_pk)
+    vehicle_pk = doc.vehicle.pk
+    if request.method == 'POST':
+        doc.file.delete(save=False)
+        doc.delete()
+        messages.success(request, 'Document deleted.')
+    return redirect('vehicle_documents', pk=vehicle_pk)

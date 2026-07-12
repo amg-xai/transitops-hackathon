@@ -53,10 +53,11 @@
         <td>{{ v.odometer }} km</td>
         <td><span class="status-{{ v.status }}">{{ v.get_status_display }}</span></td>
         <td>
+          <a href="{% url 'vehicle_documents' v.pk %}" class="btn btn-sm btn-outline-secondary">Docs</a>
           {% if can_manage_vehicles %}
           <a href="{% url 'vehicle_edit' v.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
           <a href="{% url 'vehicle_delete' v.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
-          {% else %}<span class="text-muted">View only</span>{% endif %}
+          {% endif %}
         </td>
       </tr>
       {% empty %}

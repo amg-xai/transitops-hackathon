@@ -42,13 +42,19 @@
         <td class="fw-semibold">{{ d.name }}</td>
         <td>{{ d.license_number }}</td>
         <td>{{ d.license_category }}</td>
-        <td {% if d.is_license_expired %}class="text-danger fw-bold"{% endif %}>
-          {{ d.license_expiry }} {% if d.is_license_expired %}⚠️ Expired{% endif %}
+        <td {% if d.is_license_expired %}class="text-danger fw-bold"{% elif d.is_license_expiring_soon %}class="text-warning fw-bold"{% endif %}>
+          {{ d.license_expiry }}
+          {% if d.is_license_expired %}⚠️ Expired{% elif d.is_license_expiring_soon %}⏰ Expiring Soon{% endif %}
         </td>
         <td>{{ d.safety_score }}</td>
         <td><span class="status-{{ d.status }}">{{ d.get_status_display }}</span></td>
         <td>
-          {% if can_manage_drivers %}<a href="{% url 'driver_edit' d.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>{% endif %}
+          {% if can_manage_drivers %}
+            <a href="{% url 'driver_edit' d.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+            {% if d.is_license_expired or d.is_license_expiring_soon %}
+              <a href="{% url 'driver_send_reminder' d.pk %}" class="btn btn-sm btn-outline-warning" onclick="return confirm('Send license renewal reminder email to {{ d.name }}?');">Remind</a>
+            {% endif %}
+          {% endif %}
           {% if can_delete_drivers %}<a href="{% url 'driver_delete' d.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>{% endif %}
           {% if not can_manage_drivers and not can_delete_drivers %}<span class="text-muted">View only</span>{% endif %}
         </td>

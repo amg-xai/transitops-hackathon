@@ -6,4 +6,5 @@ urlpatterns = [
     path('add/', views.driver_add, name='driver_add'),
     path('<int:pk>/edit/', views.driver_edit, name='driver_edit'),
     path('<int:pk>/delete/', views.driver_delete, name='driver_delete'),
+    path('<int:pk>/remind/', views.driver_send_reminder, name='driver_send_reminder'),
 ]

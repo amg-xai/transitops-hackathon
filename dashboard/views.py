@@ -1,10 +1,17 @@
 import csv
 from decimal import Decimal
+from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import render
+
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 from core.permissions import role_required
 from vehicles.models import Vehicle
@@ -52,7 +59,6 @@ def dashboard(request):
 
 
 def _build_vehicle_report_rows():
-    """One row per vehicle: fuel efficiency, cost breakdown, ROI."""
     rows = []
     for v in Vehicle.objects.all():
         completed = v.trips.filter(status='completed')
@@ -63,21 +69,14 @@ def _build_vehicle_report_rows():
         fuel_cost = v.fuel_logs.aggregate(c=Sum('cost'))['c'] or Decimal('0')
         maintenance_cost = v.maintenance_logs.aggregate(c=Sum('cost'))['c'] or Decimal('0')
         other_expenses = v.expenses.aggregate(c=Sum('amount'))['c'] or Decimal('0')
-        operational_cost = fuel_cost + maintenance_cost  # per spec: Fuel + Maintenance
+        operational_cost = fuel_cost + maintenance_cost
         revenue = completed.aggregate(r=Sum('revenue'))['r'] or Decimal('0')
         roi = round(((revenue - operational_cost) / v.acquisition_cost) * 100, 2) if v.acquisition_cost else None
 
         rows.append({
-            'vehicle': v,
-            'total_distance': total_distance,
-            'total_fuel_liters': total_fuel_liters,
-            'fuel_efficiency': fuel_efficiency,
-            'fuel_cost': fuel_cost,
-            'maintenance_cost': maintenance_cost,
-            'other_expenses': other_expenses,
-            'operational_cost': operational_cost,
-            'revenue': revenue,
-            'roi': roi,
+            'vehicle': v, 'total_distance': total_distance, 'total_fuel_liters': total_fuel_liters,
+            'fuel_efficiency': fuel_efficiency, 'fuel_cost': fuel_cost, 'maintenance_cost': maintenance_cost,
+            'other_expenses': other_expenses, 'operational_cost': operational_cost, 'revenue': revenue, 'roi': roi,
         })
     return rows
 
@@ -89,14 +88,12 @@ def reports(request):
     active_vehicles = Vehicle.objects.filter(status='on_trip').count()
     fleet_utilization = round((active_vehicles / total_vehicles * 100), 1) if total_vehicles else 0
 
-    context = {
-        'rows': rows,
-        'fleet_utilization': fleet_utilization,
+    return render(request, 'dashboard/reports.html', {
+        'rows': rows, 'fleet_utilization': fleet_utilization,
         'chart_labels': [r['vehicle'].registration_number for r in rows],
         'chart_operational_cost': [float(r['operational_cost']) for r in rows],
         'chart_roi': [float(r['roi']) if r['roi'] is not None else 0.0 for r in rows],
-    }
-    return render(request, 'dashboard/reports.html', context)
+    })
 
 
 @role_required('fleet_manager', 'financial_analyst', redirect_to='dashboard')
@@ -108,18 +105,54 @@ def reports_csv(request):
     writer.writerow([
         'Registration Number', 'Name', 'Type', 'Status', 'Region',
         'Total Distance (km)', 'Total Fuel (L)', 'Fuel Efficiency (km/L)',
-        'Fuel Cost', 'Maintenance Cost', 'Other Expenses',
-        'Operational Cost', 'Revenue', 'ROI (%)',
+        'Fuel Cost', 'Maintenance Cost', 'Other Expenses', 'Operational Cost', 'Revenue', 'ROI (%)',
     ])
     for r in rows:
         v = r['vehicle']
         writer.writerow([
-            v.registration_number, v.name, v.get_vehicle_type_display(),
-            v.get_status_display(), v.region,
+            v.registration_number, v.name, v.get_vehicle_type_display(), v.get_status_display(), v.region,
             r['total_distance'], r['total_fuel_liters'],
             r['fuel_efficiency'] if r['fuel_efficiency'] is not None else '',
-            r['fuel_cost'], r['maintenance_cost'], r['other_expenses'],
-            r['operational_cost'], r['revenue'],
+            r['fuel_cost'], r['maintenance_cost'], r['other_expenses'], r['operational_cost'], r['revenue'],
             r['roi'] if r['roi'] is not None else '',
         ])
+    return response
+
+
+@role_required('fleet_manager', 'financial_analyst', redirect_to='dashboard')
+def reports_pdf(request):
+    rows = _build_vehicle_report_rows()
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=20 * mm, bottomMargin=15 * mm)
+    styles = getSampleStyleSheet()
+    elements = [Paragraph("TransitOps — Fleet Operational Report", styles['Title']), Spacer(1, 8)]
+
+    data = [['Vehicle', 'Type', 'Distance (km)', 'Fuel (L)', 'Efficiency (km/L)',
+             'Fuel Cost', 'Maint. Cost', 'Operational Cost', 'Revenue', 'ROI %']]
+    for r in rows:
+        v = r['vehicle']
+        data.append([
+            v.registration_number, v.get_vehicle_type_display(),
+            f"{r['total_distance']:.1f}", f"{r['total_fuel_liters']:.1f}",
+            f"{r['fuel_efficiency']:.2f}" if r['fuel_efficiency'] is not None else '—',
+            f"Rs {r['fuel_cost']:.0f}", f"Rs {r['maintenance_cost']:.0f}",
+            f"Rs {r['operational_cost']:.0f}", f"Rs {r['revenue']:.0f}",
+            f"{r['roi']:.2f}%" if r['roi'] is not None else '—',
+        ])
+
+    table = Table(data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a1f36')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f2f5')]),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    elements.append(table)
+    doc.build(elements)
+
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="transitops_report.pdf"'
     return response

@@ -1,4 +1,6 @@
 from django.db import models
+from core.audit import log_action
+
 
 class MaintenanceLog(models.Model):
     STATUS_CHOICES = [
@@ -18,19 +20,20 @@ class MaintenanceLog(models.Model):
         return f"Maintenance on {self.vehicle} — {self.description[:40]}"
 
     def save(self, *args, **kwargs):
-        # Auto-transition: opening a record puts vehicle In Shop
-        # (unless the vehicle is retired — retired vehicles stay retired)
         if self.status == 'active' and self.vehicle.status != 'retired':
             self.vehicle.status = 'in_shop'
             self.vehicle.save()
         super().save(*args, **kwargs)
 
-    def close(self):
-        """Close maintenance → restore vehicle to Available (unless Retired)."""
+    def close(self, user=None):
         from django.utils import timezone
-        self.status   = 'closed'
+        self.status = 'closed'
         self.end_date = timezone.now().date()
+        old_v_status = self.vehicle.status
         if self.vehicle.status != 'retired':
             self.vehicle.status = 'available'
             self.vehicle.save()
         self.save()
+        log_action('maintenance', self.pk, str(self), 'Maintenance closed', 'active', 'closed', user)
+        if old_v_status != self.vehicle.status:
+            log_action('vehicle', self.vehicle.pk, str(self.vehicle), 'Status changed (maintenance closed)', old_v_status, self.vehicle.status, user)

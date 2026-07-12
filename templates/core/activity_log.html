@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="fw-bold mb-4">Activity Log</h2>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+  <div class="col-auto">
+    <label class="form-label small mb-0">Entity Type</label>
+    <select name="entity_type" class="form-select form-select-sm">
+      <option value="">All</option>
+      {% for val, label in entity_types %}<option value="{{ val }}" {% if val == selected_entity_type %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-sm btn-primary" type="submit">Filter</button>
+    <a href="{% url 'activity_log' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+  </div>
+</form>
+
+<div class="card table-card p-3">
+  <table class="table table-hover table-sm">
+    <thead class="table-light">
+      <tr><th>Time</th><th>Entity</th><th>Action</th><th>Change</th><th>By</th></tr>
+    </thead>
+    <tbody>
+      {% for log in page_obj %}
+      <tr>
+        <td class="text-nowrap">{{ log.timestamp|date:"d M Y, H:i" }}</td>
+        <td>{{ log.get_entity_type_display }} — {{ log.entity_label }}</td>
+        <td>{{ log.action }}</td>
+        <td>{% if log.old_value or log.new_value %}<span class="text-muted">{{ log.old_value }}</span> → <span class="fw-semibold">{{ log.new_value }}</span>{% else %}—{% endif %}</td>
+        <td>{{ log.performed_by.username|default:"system" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted">No activity recorded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if page_obj.has_other_pages %}
+  <nav class="mt-2">
+    <ul class="pagination pagination-sm justify-content-center mb-0">
+      {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&entity_type={{ selected_entity_type }}">Previous</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&entity_type={{ selected_entity_type }}">Next</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

@@ -12,6 +12,7 @@ urlpatterns = [
     path('trips/', include('trips.urls')),
     path('maintenance/', include('maintenance.urls')),
     path('fueling/', include('fueling.urls')),
+    path('activity/', include('core.urls')),
 ]
 
 if settings.DEBUG:

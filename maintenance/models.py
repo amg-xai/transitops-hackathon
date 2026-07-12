@@ -19,7 +19,8 @@ class MaintenanceLog(models.Model):
 
     def save(self, *args, **kwargs):
         # Auto-transition: opening a record puts vehicle In Shop
-        if self.status == 'active':
+        # (unless the vehicle is retired — retired vehicles stay retired)
+        if self.status == 'active' and self.vehicle.status != 'retired':
             self.vehicle.status = 'in_shop'
             self.vehicle.save()
         super().save(*args, **kwargs)

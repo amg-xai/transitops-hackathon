@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Polyline, Popup, CircleMarker } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import './index.css'
@@ -236,41 +236,62 @@ function LiveTransitMap({ trips }) {
           />
           {activeTrips.map(trip => (
             <div key={trip.id}>
-              {/* Route Line */}
+              {/* Remaining Route Line (Dashed) */}
               <Polyline 
-                positions={[trip.sourceCoords, trip.destCoords]} 
+                positions={trip.currentCoords ? [trip.currentCoords, trip.destCoords] : [trip.sourceCoords, trip.destCoords]} 
                 color="var(--s-blue)" 
-                weight={3} 
-                opacity={0.3} 
-                dashArray="6, 8"
+                weight={2} 
+                opacity={0.4} 
+                dashArray="5, 7"
               />
               
-              {/* Passed Route Line */}
+              {/* Passed Route Line (Solid) */}
               {trip.currentCoords && (
                 <Polyline 
                   positions={[trip.sourceCoords, trip.currentCoords]} 
                   color="var(--s-blue)" 
-                  weight={4} 
-                  opacity={0.8} 
+                  weight={3} 
+                  opacity={0.9} 
                 />
               )}
 
-              {/* Source & Dest Dots */}
-              <Marker position={trip.sourceCoords} opacity={0.6}>
+              {/* Source Dot (Hollow) */}
+              <CircleMarker 
+                center={trip.sourceCoords} 
+                radius={5} 
+                color="var(--s-blue)" 
+                weight={2} 
+                fillOpacity={0}
+              >
                 <Popup>{trip.source} (Source)</Popup>
-              </Marker>
-              <Marker position={trip.destCoords} opacity={0.6}>
-                <Popup>{trip.destination} (Destination)</Popup>
-              </Marker>
+              </CircleMarker>
 
-              {/* Current Position Marker */}
+              {/* Destination Dot (Solid) */}
+              <CircleMarker 
+                center={trip.destCoords} 
+                radius={5} 
+                stroke={false} 
+                fillColor="var(--s-blue)" 
+                fillOpacity={1}
+              >
+                <Popup>{trip.destination} (Destination)</Popup>
+              </CircleMarker>
+
+              {/* Current Position (Solid with white rim for contrast) */}
               {trip.currentCoords && (
-                <Marker position={trip.currentCoords}>
+                <CircleMarker 
+                  center={trip.currentCoords} 
+                  radius={6}
+                  color="#ffffff"
+                  weight={2}
+                  fillColor="var(--s-blue)"
+                  fillOpacity={1}
+                >
                   <Popup>
                     <strong>Trip #{trip.id}</strong><br/>
                     {trip.source} &rarr; {trip.destination}
                   </Popup>
-                </Marker>
+                </CircleMarker>
               )}
             </div>
           ))}
